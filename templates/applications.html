@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}Aplicaciones recibidas — JobWalpy{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px;padding-bottom:80px;">
+
+  <div style="margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div>
+      <h1 style="font-family:var(--font-display);font-size:2rem;font-weight:800;">
+        Aplicaciones recibidas
+        <span class="count-badge">{{ total }}</span>
+      </h1>
+      <p style="color:var(--text-soft);margin-top:8px;">Gestiona los candidatos que aplicaron a tus ofertas.</p>
+    </div>
+    <a href="/post-job" class="btn btn-primary">+ Nueva oferta</a>
+  </div>
+
+  {% if request.query_params.get('updated') %}
+  <div class="alert alert-success">✓ Estado actualizado correctamente</div>
+  {% endif %}
+
+  {% if applications %}
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    {% for app in applications %}
+    <div class="profile-section" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">
+
+      <!-- AVATAR -->
+      <div class="profile-avatar" style="background:{{ app.applicant.avatar_color }};width:48px;height:48px;font-size:1rem;flex-shrink:0;">
+        {{ app.applicant.avatar }}
+      </div>
+
+      <!-- INFO -->
+      <div style="flex:1;min-width:200px;">
+        <strong style="font-size:1rem;">{{ app.applicant.name }}</strong>
+        <p style="color:var(--text-soft);font-size:13px;margin-top:2px;">
+          {{ app.applicant.email }}
+          {% if app.applicant.location %} · {{ app.applicant.location }}{% endif %}
+        </p>
+        <p style="color:var(--text-muted);font-size:12px;margin-top:4px;">
+          Aplicó a <strong>{{ app.job.title }}</strong> · {{ app.applied_at }}
+        </p>
+        {% if app.cover_letter %}
+        <p style="color:var(--text-soft);font-size:13px;margin-top:8px;font-style:italic;border-left:2px solid var(--border);padding-left:12px;">
+          "{{ app.cover_letter[:180] }}{% if app.cover_letter | length > 180 %}…{% endif %}"
+        </p>
+        {% endif %}
+        {% if app.applicant.skills %}
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">
+          {% for skill in app.applicant.skills[:5] %}
+          <span class="tag">{{ skill }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- STATUS CONTROL -->
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px;flex-shrink:0;">
+        <span class="status-badge status-{{ app.status }}">{{ app.status.capitalize() }}</span>
+        <form action="/applications/{{ app.id }}/status" method="post" style="display:flex;gap:8px;">
+          <select name="status" style="background:var(--bg);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;color:var(--text);font-size:13px;">
+            <option value="pendiente" {% if app.status == 'pendiente' %}selected{% endif %}>Pendiente</option>
+            <option value="aceptado" {% if app.status == 'aceptado' %}selected{% endif %}>Aceptado</option>
+            <option value="rechazado" {% if app.status == 'rechazado' %}selected{% endif %}>Rechazado</option>
+          </select>
+          <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+        </form>
+        <a href="/jobs/{{ app.job_id }}" class="btn btn-outline btn-sm" style="font-size:12px;">Ver oferta</a>
+        <a href="/chat/{{ app.applicant.id }}?aplicacion_id={{ app.id }}" class="btn btn-outline btn-sm" style="font-size:12px;">💬 Contactar</a>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon">📭</span>
+    <h3>Sin aplicaciones</h3>
+    <p>Ningún candidato ha aplicado a tus ofertas aún.</p>
+    <a href="/post-job" class="btn btn-primary mt-sm">Publicar una oferta</a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

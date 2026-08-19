@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registro de Empresa — JobWalpy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/auth.css" />
+  <style>
+    /* ── Overrides para formulario largo ── */
+    body { background: var(--bg-page, #f5efeb); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 16px 80px; }
+
+    .employer-card {
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 40px rgba(1,47,94,0.13);
+      width: 100%;
+      max-width: 640px;
+      padding: 40px 40px 48px;
+    }
+
+    .employer-card h1 {
+      font-family: 'Syne', sans-serif;
+      font-size: 1.7rem;
+      font-weight: 800;
+      color: #012f5e;
+      margin-bottom: 6px;
+    }
+
+    .employer-card .subtitle {
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+
+    .section-label {
+      font-family: 'Syne', sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #012f5e;
+      background: rgba(1,47,94,0.07);
+      padding: 4px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      margin: 24px 0 16px;
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .form-group label { font-size: 13px; font-weight: 600; color: #444e5e; }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1.5px solid #C9CCCB;
+      background: #f5efeb;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      color: #0a1b35;
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      border-color: #2a95ff;
+      box-shadow: 0 0 0 3px rgba(42,149,255,.15);
+    }
+
+    .form-group small { font-size: 12px; color: #9ca3af; }
+
+    .upload-area {
+      border: 2px dashed #C9CCCB;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      background: #f5efeb;
+    }
+    .upload-area:hover { border-color: #2a95ff; background: #eef6ff; }
+    .upload-area input[type="file"] { display: none; }
+    .upload-area .upload-icon { font-size: 28px; margin-bottom: 8px; }
+    .upload-area p { font-size: 13px; color: #6b7280; margin: 0; }
+    .upload-area strong { color: #012f5e; }
+
+    .password-hints {
+      background: rgba(1,47,94,0.05);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-top: 6px;
+    }
+    .password-hints li {
+      font-size: 12px;
+      color: #6b7280;
+      list-style: none;
+      padding: 2px 0;
+    }
+    .password-hints li::before { content: "○ "; }
+    .password-hints li.ok { color: #10b981; }
+    .password-hints li.ok::before { content: "✓ "; }
+
+    .error-list {
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 10px;
+      padding: 14px 18px;
+      margin-bottom: 24px;
+    }
+    .error-list li {
+      font-size: 13px;
+      color: #b91c1c;
+      list-style: none;
+      padding: 3px 0;
+    }
+    .error-list li::before { content: "⚠ "; }
+
+    .submit-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: linear-gradient(to right, #012f5e, #0a4a8a);
+      color: #fff;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 28px;
+      transition: opacity .2s, transform .2s;
+    }
+    .submit-btn:hover { opacity: .88; transform: translateY(-1px); }
+
+    .notice {
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.35);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: #92400e;
+      margin-top: 16px;
+      line-height: 1.5;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: #6b7280;
+      text-decoration: none;
+      margin-bottom: 24px;
+    }
+    .back-link:hover { color: #012f5e; }
+
+    @media(max-width:560px) {
+      .employer-card { padding: 28px 20px 40px; }
+      .form-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="/" class="floating-logo" style="position:fixed;top:20px;left:28px;display:flex;align-items:center;gap:8px;text-decoration:none;z-index:10;">
+    <span class="logo-box">JW</span>
+    <span class="logo-text">JobWalpy</span>
+  </a>
+
+  <div class="employer-card" style="margin-top:80px;">
+    <a href="/register" class="back-link">← Volver al registro</a>
+
+    <h1>Registro de Empresa</h1>
+    <p class="subtitle">Completa los datos para publicar empleos en JobWalpy. Tu cuenta será verificada antes de ser activada.</p>
+
+    {% if errors %}
+    <ul class="error-list">
+      {% for e in errors %}
+      <li>{{ e }}</li>
+      {% endfor %}
+    </ul>
+    {% endif %}
+
+    <form method="post" action="/register/employer" enctype="multipart/form-data">
+
+      <!-- ── CONTACTO ── -->
+      <span class="section-label">👤 Datos del contacto</span>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre completo del reclutador *</label>
+          <input type="text" name="contact_name" required placeholder="Ej. María Rodríguez" value="{{ form.contact_name if form else '' }}" />
+        </div>
+        <div class="form-group">
+          <label>Teléfono / Celular *</label>
+          <input type="tel" name="phone" required placeholder="+57 300 000 0000" value="{{ form.phone if form else '' }}" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Correo corporativo *</label>
+        <input type="email" name="email" required placeholder="reclutador@tuempresa.com" value="{{ form.email if form else '' }}" />
+        <small>No se aceptan correos de Gmail, Outlook, Yahoo ni similares.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Contraseña *</label>
+        <input type="password" name="password" id="emp-password" required placeholder="Mínimo 8 caracteres" />
+        <ul class="password-hints" id="pwd-hints">
+          <li id="h-len">Mínimo 8 caracteres</li>
+          <li id="h-upper">Al menos una mayúscula</li>
+          <li id="h-num">Al menos un número</li>
+          <li id="h-special">Al menos un carácter especial (!@#$...)</li>
+        </ul>
+      </div>
+
+      <!-- ── EMPRESA ── -->
+      <span class="section-label">🏢 Datos de la empresa</span>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Nombre comercial *</label>
+          <input type="text" name="company_name" required placeholder="Ej. Clínica de la Sabana" value="{{ form.company_name if form else '' }}" />
+          <small>Nombre que verán los candidatos.</small>
+        </div>
+        <div class="form-group">
+          <label>Razón social *</label>
+          <input type="text" name="legal_name" required placeholder="Ej. Inversiones Médicas S.A.S." value="{{ form.legal_name if form else '' }}" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>NIT / RUT / RFC *</label>
+          <input type="text" name="tax_id" required placeholder="Ej. 900.123.456-7" value="{{ form.tax_id if form else '' }}" />
+        </div>
+        <div class="form-group">
+          <label>Industria / Sector *</label>
+          <select name="industry" required>
+            <option value="">Seleccionar…</option>
+            {% for ind in ["Tecnología","Salud","Educación","Finanzas","Manufactura","Construcción","Comercio","Logística","Marketing","Otro"] %}
+            <option value="{{ ind }}" {% if form and form.industry == ind %}selected{% endif %}>{{ ind }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Ciudad / Ubicación *</label>
+          <input type="text" name="location" required placeholder="Ej. Bogotá, Colombia" value="{{ form.location if form else '' }}" />
+        </div>
+        <div class="form-group">
+          <label>Tamaño de la empresa</label>
+          <select name="size">
+            <option value="">Seleccionar…</option>
+            {% for s in ["1-10 empleados","11-50 empleados","51-200 empleados","201-500 empleados","500+ empleados"] %}
+            <option value="{{ s }}" {% if form and form.size == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Dirección física *</label>
+        <input type="text" name="address" required placeholder="Calle 123 # 45-67, Bogotá" value="{{ form.address if form else '' }}" />
+      </div>
+
+      <div class="form-group">
+        <label>Sitio web o LinkedIn corporativo</label>
+        <input type="url" name="website" placeholder="https://tuempresa.com" value="{{ form.website if form else '' }}" />
+        <small>Ayuda a verificar la legitimidad de la empresa.</small>
+      </div>
+
+      <!-- ── DOCUMENTO ── -->
+      <span class="section-label">📄 Documento de verificación</span>
+
+      <div class="form-group">
+        <label>Certificado de Cámara de Comercio (PDF, vigencia no mayor a 90 días)</label>
+        <div class="upload-area" onclick="document.getElementById('doc-upload').click()">
+          <div class="upload-icon">📎</div>
+          <p><strong>Haz clic para subir</strong> o arrastra el archivo aquí</p>
+          <p id="file-name" style="margin-top:6px;color:#012f5e;font-weight:600;"></p>
+          <input type="file" id="doc-upload" name="document" accept=".pdf" onchange="document.getElementById('file-name').textContent = this.files[0]?.name || ''" />
+        </div>
+        <small>Opcional pero recomendado. Acelera el proceso de verificación.</small>
+      </div>
+
+      <div class="notice">
+        ⏳ <strong>Proceso de verificación:</strong> Una vez registrado, nuestro equipo revisará tus datos en un plazo de 1-2 días hábiles. Recibirás un correo cuando tu cuenta esté activa para publicar empleos.
+      </div>
+
+      <button type="submit" class="submit-btn">Registrar empresa →</button>
+
+    </form>
+  </div>
+
+  <script>
+    const pwd = document.getElementById('emp-password');
+    const hints = {
+      'h-len':     v => v.length >= 8,
+      'h-upper':   v => /[A-Z]/.test(v),
+      'h-num':     v => /\d/.test(v),
+      'h-special': v => /[!@#$%^&*()\-_.,?":{}|<>]/.test(v),
+    };
+    pwd.addEventListener('input', function() {
+      Object.entries(hints).forEach(([id, fn]) => {
+        document.getElementById(id).classList.toggle('ok', fn(pwd.value));
+      });
+    });
+  </script>
+
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+</body>
+</html>

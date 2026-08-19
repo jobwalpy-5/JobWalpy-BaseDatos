@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}JobWalpy — Encuentra tu próximo empleo{% endblock %}
+
+{% block content %}
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span>✦</span>
+      <span>{{ stats.total_jobs }} empleos disponibles ahora</span>
+    </div>
+
+    {% if user and user.role == "empleador" %}
+    <h1 class="hero-title">
+      Encuentra el talento<br/>
+      <span class="gradient-text">que necesitas</span>
+    </h1>
+    <p class="hero-sub">Conecta con candidatos calificados en Colombia. Publica tus vacantes y recibe aplicaciones.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:36px;">
+      <a href="/post-job" class="btn btn-primary">+ Publicar empleo</a>
+      <a href="/profile" class="btn btn-outline">Ver mis vacantes</a>
+    </div>
+    {% else %}
+    <h1 class="hero-title">
+      Encuentra el empleo<br/>
+      <span class="gradient-text">que mereces</span>
+    </h1>
+    <p class="hero-sub">Conectamos talento colombiano con las mejores empresas. Sin filtros innecesarios, sin demoras.</p>
+    <form action="/jobs" method="get" class="hero-search">
+      <input type="text" name="search" class="search-input" placeholder="Busca por cargo, empresa o categoría…" />
+      <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+    {% endif %}
+
+    <div class="hero-stats">
+      <div class="stat-item"><strong>{{ stats.total_jobs }}</strong><span>Empleos activos</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><strong>{{ stats.total_users }}</strong><span>Usuarios registrados</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><strong>{{ stats.categories }}</strong><span>Categorías</span></div>
+      <div class="stat-divider"></div>
+      <div class="stat-item"><strong>{{ stats.applications }}</strong><span>Aplicaciones enviadas</span></div>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="floating-card fc1">
+      <span class="fc-icon">💻</span>
+      <div><strong>Desarrollador Full Stack</strong><p style="color:var(--text-muted);font-size:12px">TechCorp Colombia · Bogotá</p></div>
+    </div>
+    <div class="floating-card fc2">
+      <span class="fc-icon">🎨</span>
+      <div><strong>Diseñador UX/UI</strong><p style="color:var(--text-muted);font-size:12px">CreativeHub · Medellín</p></div>
+    </div>
+    <div class="floating-card fc3">
+      <span class="fc-icon">📊</span>
+      <div><strong>Community Manager</strong><p style="color:var(--text-muted);font-size:12px">MarketingPlus · Remoto</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── VISTA EMPLEADOR: candidatos disponibles ── -->
+{% if user and user.role == "empleador" %}
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Candidatos disponibles <span class="count-badge">{{ recent_seekers|length }}</span></h2>
+      <a href="/jobs" class="btn btn-outline btn-sm">Ver empleos →</a>
+    </div>
+    {% if recent_seekers %}
+    <div class="jobs-grid">
+      {% for seeker in recent_seekers %}
+      <div class="job-card" style="cursor:default;">
+        <div class="job-card-header">
+          <div class="company-avatar" style="background:{{ seeker.avatar_color }};">{{ seeker.avatar }}</div>
+          <span class="job-type-badge">Buscador</span>
+        </div>
+        <h3 class="job-title">{{ seeker.name }}</h3>
+        {% if seeker.bio %}
+        <p class="job-company" style="font-size:13px;color:var(--text-soft);">{{ seeker.bio[:80] }}{% if seeker.bio|length > 80 %}…{% endif %}</p>
+        {% endif %}
+        <div class="job-meta">
+          {% if seeker.location %}<span class="job-meta-item">📍 {{ seeker.location }}</span>{% endif %}
+          {% if seeker.experience %}<span class="job-meta-item">💼 {{ seeker.experience }}</span>{% endif %}
+        </div>
+        {% if seeker.skills %}
+        <div class="job-footer" style="flex-wrap:wrap;gap:6px;">
+          {% for skill in seeker.skills[:3] %}
+          <span class="tag tag-soft">{{ skill }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">👥</span>
+      <h3>Aún no hay candidatos registrados</h3>
+      <p>Vuelve pronto, la comunidad está creciendo.</p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ── VISTA BUSCADOR / VISITANTE ── -->
+{% else %}
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Explora por categoría</h2>
+      <a href="/jobs" class="btn btn-outline btn-sm">Ver todos →</a>
+    </div>
+    <div class="categories-grid">
+      {% set cat_icons = {
+        "Tecnología": "💻", "Diseño": "🎨", "Finanzas": "💰",
+        "Marketing": "📣", "Ingeniería": "⚙️", "Salud": "🏥",
+        "Educación": "📚", "Ventas": "🤝", "Recursos Humanos": "👥"
+      } %}
+      {% for cat in categories %}
+      <a href="/jobs?category={{ cat }}" class="category-card">
+        <span class="cat-icon">{{ cat_icons.get(cat, "📁") }}</span>
+        <span class="cat-name">{{ cat }}</span>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2 class="section-title">Empleos recientes</h2>
+      <a href="/jobs" class="btn btn-outline btn-sm">Ver todos →</a>
+    </div>
+    <div class="jobs-grid">
+      {% for job in recent_jobs %}
+      <a href="/jobs/{{ job.id }}" class="job-card">
+        <div class="job-card-header">
+          <div class="company-avatar">{{ job.company[:2].upper() }}</div>
+          <span class="job-type-badge">{{ job.type }}</span>
+        </div>
+        <h3 class="job-title">{{ job.title }}</h3>
+        <p class="job-company">{{ job.company }}</p>
+        <div class="job-meta">
+          <span class="job-meta-item">📍 {{ job.location }}</span>
+          <span class="job-meta-item">💰 ${{ "{:,}".format(job.salary_min) }} – ${{ "{:,}".format(job.salary_max) }}</span>
+        </div>
+        <div class="job-footer">
+          <span class="tag tag-soft">{{ job.category }}</span>
+          <span class="job-date">{{ job.posted_at }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="container">
+    <div class="cta-grid">
+      <div class="cta-card cta-seeker">
+        <span class="cta-icon">🚀</span>
+        <h3>¿Buscas trabajo?</h3>
+        <p>Crea tu perfil y aplica a cientos de ofertas en segundos.</p>
+        <a href="/register" class="btn btn-white mt-sm">Crear perfil gratis</a>
+      </div>
+      <div class="cta-card cta-employer">
+        <span class="cta-icon">🏢</span>
+        <h3>¿Tienes una empresa?</h3>
+        <p>Publica tus vacantes y encuentra el talento que necesitas.</p>
+        <a href="/register/employer" class="btn btn-white mt-sm">Registrar empresa</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endif %}
+{% endblock %}

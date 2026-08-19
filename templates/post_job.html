@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Publicar empleo — JobWalpy{% endblock %}
+
+{% block content %}
+<div class="container form-page">
+  <div style="max-width:800px;">
+    <div style="margin-bottom:32px;">
+      <h1 style="font-family:var(--font-display);font-size:2rem;font-weight:800;">Publicar oferta de empleo</h1>
+      <p style="color:var(--text-soft);margin-top:8px;">Llega a miles de candidatos calificados en Colombia.</p>
+    </div>
+
+    <div class="form-card">
+      <form action="/post-job" method="post">
+
+        <p class="form-section-title" style="border-top:none;margin-top:0;padding-top:0;">Información del cargo</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Título del cargo *</label>
+            <input type="text" name="title" required placeholder="Ej: Desarrollador Full Stack" />
+          </div>
+          <div class="form-group">
+            <label>Empresa *</label>
+            <input type="text" name="company" value="{{ user.name }}" required placeholder="Nombre de la empresa" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ubicación *</label>
+            <input type="text" name="location" required placeholder="Ej: Bogotá, Colombia o Remoto" />
+          </div>
+          <div class="form-group">
+            <label>Categoría *</label>
+            <select name="category" required>
+              <option value="">Selecciona categoría</option>
+              <option value="Tecnología">Tecnología</option>
+              <option value="Diseño">Diseño</option>
+              <option value="Marketing">Marketing</option>
+              <option value="Finanzas">Finanzas</option>
+              <option value="Ingeniería">Ingeniería</option>
+              <option value="Salud">Salud</option>
+              <option value="Educación">Educación</option>
+              <option value="Ventas">Ventas</option>
+              <option value="Recursos Humanos">Recursos Humanos</option>
+              <option value="Otro">Otro</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Tipo de empleo *</label>
+            <select name="type" required>
+              <option value="">Selecciona tipo</option>
+              <option value="Tiempo completo">Tiempo completo</option>
+              <option value="Medio tiempo">Medio tiempo</option>
+              <option value="Freelance">Freelance</option>
+              <option value="Prácticas">Prácticas</option>
+            </select>
+          </div>
+        </div>
+
+        <p class="form-section-title">Salario (COP mensual)</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Salario mínimo *</label>
+            <input type="number" name="salary_min" required placeholder="Ej: 3000000" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Salario máximo *</label>
+            <input type="number" name="salary_max" required placeholder="Ej: 5000000" min="0" />
+          </div>
+        </div>
+
+        <p class="form-section-title">Detalle de la oferta</p>
+
+        <div class="form-group">
+          <label>Descripción del cargo *</label>
+          <textarea name="description" rows="5" required placeholder="Describe las responsabilidades, el equipo, la misión del rol…"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Requisitos *</label>
+          <textarea name="requirements" rows="3" required placeholder="Python, JavaScript, 2 años de experiencia, Inglés B2 (separados por coma)"></textarea>
+          <small>Separa cada requisito con una coma</small>
+        </div>
+
+        <div class="form-group">
+          <label>Beneficios</label>
+          <textarea name="benefits" rows="3" placeholder="Trabajo remoto, Seguro médico, Bonos anuales (separados por coma)"></textarea>
+          <small>Separa cada beneficio con una coma</small>
+        </div>
+
+        <div class="form-actions">
+          <a href="/jobs" class="btn btn-outline">Cancelar</a>
+          <button type="submit" class="btn btn-primary">Publicar oferta</button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

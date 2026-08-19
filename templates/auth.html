@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% if show_register %}Registrarse{% else %}Iniciar sesión{% endif %} — JobWalpy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=REM:ital,wght@0,100..900;1,100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/auth.css" />
+</head>
+<body>
+
+  <a href="/" class="floating-logo">
+    <span class="logo-box">JW</span>
+    <span class="logo-text">JobWalpy</span>
+  </a>
+
+  {% if error %}
+  <div class="server-alert">{{ error }}</div>
+  {% endif %}
+
+  <div class="container {% if show_register %}toggle{% endif %}" id="container">
+
+    <!-- ── INICIAR SESIÓN ── -->
+    <div class="container-form">
+      <form class="sign-in" action="/login" method="post">
+        <input type="hidden" name="next" value="{{ next or '/' }}" />
+        <h1>Iniciar Sesión</h1>
+        <div class="social-networks">
+          <ion-icon name="logo-google"></ion-icon>
+          <ion-icon name="logo-facebook"></ion-icon>
+        </div>
+        <span>Use su correo y contraseña</span>
+
+        <div class="box-sign-in">
+          <ion-icon name="mail-outline"></ion-icon>
+          <input type="email" name="email" placeholder="Email" required autocomplete="email" />
+        </div>
+
+        <div class="box-sign-in">
+          <ion-icon name="lock-closed-outline"></ion-icon>
+          <input type="password" name="password" placeholder="Contraseña" required autocomplete="current-password" />
+        </div>
+
+        <a href="#">¿Olvidaste tu contraseña?</a>
+
+        <button class="incognito" type="button" onclick="window.location.href='/jobs'">
+          <ion-icon name="search-outline"></ion-icon>
+          Modo incógnito
+        </button>
+
+        <div class="button-wrap">
+          <button id="unclock-sign-in" type="submit">Iniciar sesión</button>
+        </div>
+        <p class="toggle-text">¿No tienes cuenta? <span id="btn-sign-up-mobile">Regístrate</span></p>
+        <p class="demo-hint">Demo: <code>ana@email.com</code> / <code>1234</code></p>
+      </form>
+    </div>
+
+    <!-- ── REGISTRARSE (buscador o redirige a empleador) ── -->
+    <div class="container-form">
+      <div class="sign-up" id="register-panel">
+        <h1>Registrarse</h1>
+        <div class="social-networks">
+          <ion-icon name="logo-google"></ion-icon>
+          <ion-icon name="logo-facebook"></ion-icon>
+        </div>
+        <span>Elige cómo quieres usar JobWalpy</span>
+
+        <!-- Selector de rol visual -->
+        <div class="role-selector" id="role-selector">
+          <button type="button" class="role-btn active" id="btn-buscador" onclick="selectRole('buscador')">
+            🔍 Busco empleo
+          </button>
+          <button type="button" class="role-btn" id="btn-empleador" onclick="selectRole('empleador')">
+            🏢 Soy empleador
+          </button>
+        </div>
+
+        <!-- Formulario buscador -->
+        <form id="form-buscador" class="role-form" action="/register" method="post">
+          <input type="hidden" name="role" value="buscador" />
+
+          <div class="box-sign-up">
+            <ion-icon name="person-outline"></ion-icon>
+            <input type="text" name="name" placeholder="Nombre completo" required />
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="mail-outline"></ion-icon>
+            <input type="email" name="email" placeholder="Email" required />
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            <input type="password" name="password" placeholder="Contraseña (mín. 8 car., mayúscula, número, especial)" required />
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="location-outline"></ion-icon>
+            <input type="text" name="location" placeholder="Ciudad (opcional)" />
+          </div>
+          <div class="button-wrap">
+            <button type="submit">Crear cuenta</button>
+          </div>
+        </form>
+
+        <!-- Panel empleador: redirige al formulario completo -->
+        <div id="panel-empleador" class="role-form" style="display:none; text-align:center; padding: 16px 0;">
+          <p style="font-size:14px;color:#444e5e;margin-bottom:20px;line-height:1.6;">
+            Para publicar empleos necesitamos verificar tu empresa.<br/>
+            El registro toma 3 minutos y requiere datos legales básicos.
+          </p>
+          <a href="/register/employer" class="employer-cta-btn">
+            Registrar mi empresa →
+          </a>
+          <p style="font-size:12px;color:#9ca3af;margin-top:14px;">
+            Tu cuenta será revisada en 1-2 días hábiles.
+          </p>
+        </div>
+
+        <p class="toggle-text">¿Ya tienes cuenta? <span id="btn-sign-in-mobile">Inicia sesión</span></p>
+      </div>
+    </div>
+
+    <!-- ── PANEL BIENVENIDA ── -->
+    <div class="container-welcome">
+      <div class="welcome-sign-up welcome">
+        <h3>¡Bienvenido!</h3>
+        <p>Ingrese sus datos personales para usar todas las funciones del sitio</p>
+        <button class="button" id="btn-sign-up">Registrarse</button>
+      </div>
+      <div class="welcome-sign-in welcome">
+        <h3>¡Hola!</h3>
+        <p>Regístrese con sus datos personales para usar todas las funciones del sitio</p>
+        <button class="button" id="btn-sign-in">Iniciar Sesión</button>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .role-form { width: 100%; }
+    .employer-cta-btn {
+      display: inline-block;
+      padding: 12px 28px;
+      background: linear-gradient(to right, #012f5e, #0a4a8a);
+      color: #fff;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: opacity .2s, transform .2s;
+    }
+    .employer-cta-btn:hover { opacity: .88; transform: translateY(-1px); }
+  </style>
+
+  <script src="/static/js/auth.js"></script>
+  <script>
+    function selectRole(role) {
+      document.getElementById('btn-buscador').classList.toggle('active', role === 'buscador');
+      document.getElementById('btn-empleador').classList.toggle('active', role === 'empleador');
+      document.getElementById('form-buscador').style.display  = role === 'buscador' ? 'block' : 'none';
+      document.getElementById('panel-empleador').style.display = role === 'empleador' ? 'block' : 'none';
+    }
+  </script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</body>
+</html>

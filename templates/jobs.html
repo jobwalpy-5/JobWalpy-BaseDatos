@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+{% block title %}{% if view == "candidatos" %}Candidatos{% else %}Empleos{% endif %} — JobWalpy{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px;padding-bottom:80px;">
+
+  <!-- PAGE HEADER -->
+  <div style="margin-bottom:32px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div>
+      {% if view == "candidatos" %}
+        <h1 class="section-title">Candidatos disponibles <span class="count-badge">{{ total }}</span></h1>
+        <p style="color:var(--text-soft);margin-top:8px;">Encuentra el talento que necesita tu empresa</p>
+      {% else %}
+        <h1 class="section-title">Empleos disponibles <span class="count-badge">{{ total }}</span></h1>
+        <p style="color:var(--text-soft);margin-top:8px;">Encuentra la oportunidad perfecta para ti</p>
+      {% endif %}
+    </div>
+    <button class="filter-toggle-btn" id="filter-toggle">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="20" y2="12"/><line x1="12" y1="18" x2="20" y2="18"/>
+      </svg>
+      Filtros
+    </button>
+  </div>
+
+  <!-- OVERLAY -->
+  <div class="filters-overlay" id="filters-overlay"></div>
+
+  <!-- SIDEBAR FILTROS -->
+  <aside class="filters-sidebar" id="filters-sidebar">
+    <div class="filters-sidebar-header">
+      <h3>Filtros</h3>
+      <button class="filter-close-btn" id="filter-close">✕</button>
+    </div>
+
+    {% if view == "candidatos" %}
+    <!-- Filtros para empleador -->
+    <form id="filter-form" action="/jobs" method="get">
+      <div class="filter-block">
+        <h4 class="filter-title">Buscar</h4>
+        <input type="text" name="search" value="{{ search }}" placeholder="Nombre, habilidad…" class="filter-input" />
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-block">
+        <h4 class="filter-title">Ciudad</h4>
+        <input type="text" name="location" value="{{ filter_location }}" placeholder="Ej. Bogotá" class="filter-input" />
+      </div>
+      <div class="filter-block">
+        <h4 class="filter-title">Habilidad clave</h4>
+        <input type="text" name="skills" value="{{ filter_skills }}" placeholder="Ej. Python, React" class="filter-input" />
+      </div>
+      <div class="filter-block">
+        <h4 class="filter-title">Con experiencia</h4>
+        <select name="experience">
+          <option value="">Todos</option>
+          <option value="1" {% if filter_experience %}selected{% endif %}>Solo con experiencia</option>
+        </select>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filters-buttons">
+        <button type="submit" class="apply-btn">Aplicar filtros</button>
+        <a href="/jobs" class="clear-btn" style="text-align:center;text-decoration:none;display:block;">Limpiar</a>
+      </div>
+    </form>
+
+    {% else %}
+    <!-- Filtros para buscador -->
+    <form id="filter-form" action="/jobs" method="get">
+      <div class="filter-block">
+        <h4 class="filter-title">Buscar</h4>
+        <input type="text" name="search" value="{{ search }}" placeholder="Cargo, empresa…" class="filter-input" />
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-block">
+        <h4 class="filter-title">Categoría</h4>
+        <select name="category">
+          <option value="">Todas</option>
+          {% for cat in categories %}
+          <option value="{{ cat }}" {% if selected_category == cat %}selected{% endif %}>{{ cat }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="filter-block">
+        <h4 class="filter-title">Tipo de empleo</h4>
+        <select name="type">
+          <option value="">Todos</option>
+          <option value="Tiempo completo" {% if selected_type == "Tiempo completo" %}selected{% endif %}>Tiempo completo</option>
+          <option value="Medio tiempo" {% if selected_type == "Medio tiempo" %}selected{% endif %}>Medio tiempo</option>
+          <option value="Freelance" {% if selected_type == "Freelance" %}selected{% endif %}>Freelance</option>
+          <option value="Prácticas" {% if selected_type == "Prácticas" %}selected{% endif %}>Prácticas</option>
+        </select>
+      </div>
+      <div class="filter-block">
+        <h4 class="filter-title">Salario mínimo</h4>
+        <select name="salary">
+          <option value="">Sin filtro</option>
+          <option value="1000000" {% if selected_salary == "1000000" %}selected{% endif %}>$1.000.000+</option>
+          <option value="2000000" {% if selected_salary == "2000000" %}selected{% endif %}>$2.000.000+</option>
+          <option value="3000000" {% if selected_salary == "3000000" %}selected{% endif %}>$3.000.000+</option>
+          <option value="5000000" {% if selected_salary == "5000000" %}selected{% endif %}>$5.000.000+</option>
+        </select>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filters-buttons">
+        <button type="submit" class="apply-btn">Aplicar filtros</button>
+        <a href="/jobs" class="clear-btn" style="text-align:center;text-decoration:none;display:block;">Limpiar</a>
+      </div>
+    </form>
+    {% endif %}
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="jobs-main">
+
+    {% if view == "candidatos" %}
+    <!-- ── GRID DE CANDIDATOS ── -->
+    {% if seekers %}
+    <div class="jobs-grid">
+      {% for seeker in seekers %}
+      <div class="job-card" style="cursor:default;">
+        <div class="job-card-header">
+          <div class="company-avatar" style="background:{{ seeker.avatar_color }};">{{ seeker.avatar }}</div>
+          <span class="job-type-badge">Candidato</span>
+        </div>
+        <h3 class="job-title">{{ seeker.name }}</h3>
+        {% if seeker.bio %}
+        <p class="job-company">{{ seeker.bio[:80] }}{% if seeker.bio|length > 80 %}…{% endif %}</p>
+        {% endif %}
+        <div class="job-meta">
+          {% if seeker.location %}<span class="job-meta-item">📍 {{ seeker.location }}</span>{% endif %}
+          {% if seeker.experience %}<span class="job-meta-item">💼 {{ seeker.experience }}</span>{% endif %}
+          {% if seeker.education %}<span class="job-meta-item">🎓 {{ seeker.education }}</span>{% endif %}
+        </div>
+        {% if seeker.skills %}
+        <div class="job-footer" style="flex-wrap:wrap;gap:6px;margin-top:8px;">
+          {% for skill in seeker.skills[:4] %}
+          <span class="tag tag-soft">{{ skill }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+        <div style="margin-top:12px;">
+          <a href="/chat/{{ seeker.id }}" class="btn btn-primary btn-sm" style="width:100%;text-align:center;">
+            💬 Contactar
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">👥</span>
+      <h3>Sin candidatos</h3>
+      <p>Intenta con otros filtros.</p>
+      <a href="/jobs" class="btn btn-primary mt-sm">Ver todos</a>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- ── GRID DE EMPLEOS ── -->
+    {% if jobs %}
+    <div class="jobs-grid">
+      {% for job in jobs %}
+      <a href="/jobs/{{ job.id }}" class="job-card">
+        <div class="job-card-header">
+          <div class="company-avatar">{{ job.company[:2].upper() }}</div>
+          <span class="job-type-badge">{{ job.type }}</span>
+        </div>
+        <h3 class="job-title">{{ job.title }}</h3>
+        <p class="job-company">{{ job.company }}</p>
+        <div class="job-meta">
+          <span class="job-meta-item">📍 {{ job.location }}</span>
+          <span class="job-meta-item">💰 ${{ "{:,}".format(job.salary_min) }} – ${{ "{:,}".format(job.salary_max) }}</span>
+        </div>
+        <div class="job-footer">
+          <span class="tag tag-soft">{{ job.category }}</span>
+          <span class="job-date">{{ job.posted_at }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">🔍</span>
+      <h3>Sin resultados</h3>
+      <p>Intenta con otros filtros o términos de búsqueda.</p>
+      <a href="/jobs" class="btn btn-primary mt-sm">Ver todos los empleos</a>
+    </div>
+    {% endif %}
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const filterToggle  = document.getElementById('filter-toggle');
+const filterSidebar = document.getElementById('filters-sidebar');
+const filterClose   = document.getElementById('filter-close');
+const filterOverlay = document.getElementById('filters-overlay');
+
+function openFilters() {
+  filterSidebar.classList.add('open');
+  filterOverlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeFilters() {
+  filterSidebar.classList.remove('open');
+  filterOverlay.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+filterToggle?.addEventListener('click', openFilters);
+filterClose?.addEventListener('click', closeFilters);
+filterOverlay?.addEventListener('click', closeFilters);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFilters(); });
+
+document.querySelectorAll('#filter-form select').forEach(sel => {
+  sel.addEventListener('change', () => document.getElementById('filter-form').submit());
+});
+</script>
+{% endblock %}

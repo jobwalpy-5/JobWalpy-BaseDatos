@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }} — JobWalpy{% endblock %}
+
+{% block content %}
+<div class="container" style="padding-top:40px;padding-bottom:80px;">
+
+  <!-- BACK -->
+  <a href="/jobs" style="color:var(--text-muted);font-size:14px;display:inline-flex;align-items:center;gap:6px;margin-bottom:24px;">
+    ← Volver a empleos
+  </a>
+
+  <div class="detail-layout">
+
+    <!-- MAIN CONTENT -->
+    <div>
+
+      <!-- JOB HEADER CARD -->
+      <div class="profile-section" style="margin-bottom:24px;">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:16px;">
+            <div class="company-avatar" style="width:60px;height:60px;font-size:1.3rem;border-radius:var(--radius);">
+              {{ job.company[:2].upper() }}
+            </div>
+            <div>
+              <h1 style="font-family:var(--font-display);font-size:1.6rem;font-weight:800;margin-bottom:4px;">{{ job.title }}</h1>
+              <p style="color:var(--text-soft);">{{ job.company }} · {{ job.location }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- META CHIPS -->
+        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;">
+          <span class="tag">📍 {{ job.location }}</span>
+          <span class="tag">🕐 {{ job.type }}</span>
+          <span class="tag">💰 ${{ "{:,}".format(job.salary_min) }} – ${{ "{:,}".format(job.salary_max) }} COP</span>
+          <span class="tag tag-soft">{{ job.category }}</span>
+          <span class="tag">📅 {{ job.posted_at }}</span>
+          <span class="tag">👥 {{ applicant_count }} aplicante{{ 's' if applicant_count != 1 else '' }}</span>
+        </div>
+      </div>
+
+      <!-- DESCRIPTION -->
+      <div class="profile-section" style="margin-bottom:24px;">
+        <h3>Descripción del cargo</h3>
+        <p style="color:var(--text-soft);line-height:1.8;">{{ job.description }}</p>
+      </div>
+
+      <!-- REQUIREMENTS -->
+      <div class="profile-section" style="margin-bottom:24px;">
+        <h3>Requisitos</h3>
+        <ul style="list-style:none;display:flex;flex-direction:column;gap:10px;">
+          {% for req in job.requirements %}
+          <li style="display:flex;align-items:center;gap:10px;color:var(--text-soft);">
+            <span style="color:var(--primary);font-weight:700;">→</span> {{ req }}
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+
+      <!-- BENEFITS -->
+      <div class="profile-section">
+        <h3>Beneficios</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;">
+          {% for benefit in job.benefits %}
+          <span class="tag tag-soft">✓ {{ benefit }}</span>
+          {% endfor %}
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside>
+
+      <!-- APPLY BOX -->
+      {% if user and user.role == "buscador" %}
+      <div class="profile-section" style="margin-bottom:20px;text-align:center;">
+        {% if already_applied %}
+          <p style="color:var(--success);font-weight:600;margin-bottom:8px;">✓ Aplicación enviada</p>
+          <p style="color:var(--text-muted);font-size:13px;">Ya aplicaste a este empleo.</p>
+        {% else %}
+          <p style="color:var(--text-soft);font-size:14px;margin-bottom:16px;">¿Listo para dar el siguiente paso?</p>
+          <button onclick="document.getElementById('apply-modal').style.display='flex'" class="btn btn-primary full-width">
+            Aplicar ahora
+          </button>
+        {% endif %}
+      </div>
+      {% elif not user %}
+      <div class="profile-section" style="margin-bottom:20px;text-align:center;">
+        <p style="color:var(--text-soft);font-size:14px;margin-bottom:16px;">Inicia sesión para aplicar a este empleo.</p>
+        <a href="/login?next=/jobs/{{ job.id }}" class="btn btn-primary full-width">Iniciar sesión</a>
+      </div>
+      {% endif %}
+
+      <!-- COMPANY INFO -->
+      <div class="profile-section">
+        <h3>Sobre la empresa</h3>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;">
+          <div class="company-avatar" style="border-radius:var(--radius-sm);">{{ job.company[:2].upper() }}</div>
+          <div>
+            <strong>{{ job.company }}</strong>
+            <p style="font-size:13px;color:var(--text-muted);">{{ job.category }}</p>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;color:var(--text-soft);">
+          <span>📍 {{ job.location }}</span>
+          <span>📅 Publicado el {{ job.posted_at }}</span>
+        </div>
+      </div>
+
+      <!-- DELETE (employer) -->
+      {% if user and user.id == job.posted_by %}
+      <div class="profile-section danger-zone" style="margin-top:20px;">
+        <h3>Zona de peligro</h3>
+        <p>Esta acción eliminará la oferta permanentemente.</p>
+        <form action="/jobs/{{ job.id }}/delete" method="post">
+          <button type="submit" class="btn btn-danger full-width" onclick="return confirm('¿Eliminar esta oferta?')">
+            Eliminar oferta
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+    </aside>
+
+  </div>
+</div>
+
+<!-- APPLY MODAL -->
+{% if user and user.role == "buscador" and not already_applied %}
+<div class="modal-overlay" id="apply-modal" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:560px;width:100%;max-height:90vh;overflow-y:auto;">
+
+    <div class="modal-header" style="border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:0;">
+      <div>
+        <h3 style="font-size:1.2rem;font-weight:800;margin-bottom:4px;">Aplicar a {{ job.title }}</h3>
+        <p style="color:var(--text-muted);font-size:13px;">{{ job.company }} · {{ job.location }}</p>
+      </div>
+      <button class="modal-close" onclick="document.getElementById('apply-modal').style.display='none'">✕</button>
+    </div>
+
+    <div style="background:var(--bg-soft,#f5f6fa);border-radius:var(--radius-sm);padding:12px 16px;margin:16px 0;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-soft);">
+      <span style="font-size:1.2rem;">👤</span>
+      Estás aplicando como <strong style="margin-left:4px;">{{ user.name }}</strong> a <strong style="margin-left:4px;">{{ job.company }}</strong>.
+    </div>
+
+    <form action="/jobs/{{ job.id }}/apply" method="post" onsubmit="return validateApplyForm()">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:13px;font-weight:600;">Teléfono de contacto <span style="color:var(--danger,#e53e3e);">*</span></label>
+          <input type="tel" name="phone" required placeholder="Ej: 300 123 4567"
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);">
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:13px;font-weight:600;">Años de experiencia <span style="color:var(--danger,#e53e3e);">*</span></label>
+          <select name="experience_years" required
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);">
+            <option value="" disabled selected>Selecciona</option>
+            <option value="0">Sin experiencia</option>
+            <option value="1">1 año</option>
+            <option value="2">2 años</option>
+            <option value="3">3 años</option>
+            <option value="4">4 años</option>
+            <option value="5+">5 o más años</option>
+          </select>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:13px;font-weight:600;">Nivel educativo <span style="color:var(--danger,#e53e3e);">*</span></label>
+          <select name="education_level" required
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);">
+            <option value="" disabled selected>Selecciona</option>
+            <option value="bachiller">Bachiller</option>
+            <option value="tecnico">Técnico / Tecnólogo</option>
+            <option value="universitario">Universitario</option>
+            <option value="especializacion">Especialización</option>
+            <option value="maestria">Maestría</option>
+            <option value="doctorado">Doctorado</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label style="font-size:13px;font-weight:600;">Disponibilidad <span style="color:var(--danger,#e53e3e);">*</span></label>
+          <select name="availability" required
+            style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);">
+            <option value="" disabled selected>Selecciona</option>
+            <option value="inmediata">Inmediata</option>
+            <option value="2_semanas">En 2 semanas</option>
+            <option value="1_mes">En 1 mes</option>
+            <option value="negociable">Negociable</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px;">
+        <label style="font-size:13px;font-weight:600;">Pretensión salarial (COP) <span style="color:var(--danger,#e53e3e);">*</span></label>
+        <input type="text" name="salary_expectation" required placeholder="Ej: 3.500.000"
+          style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);">
+      </div>
+
+      <div class="form-group" style="margin-bottom:20px;">
+        <label style="font-size:13px;font-weight:600;">Carta de presentación <span style="color:var(--danger,#e53e3e);">*</span></label>
+        <p style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">Cuéntale a la empresa por qué eres el candidato ideal para este cargo.</p>
+        <textarea name="cover_letter" id="cover_letter_field" rows="5" required
+          placeholder="Describe tu experiencia relevante, habilidades clave y por qué quieres unirte a {{ job.company }}…"
+          style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--bg);color:var(--text);resize:vertical;"></textarea>
+        <p id="cover-letter-error" style="color:var(--danger,#e53e3e);font-size:12px;display:none;margin-top:4px;">
+          La carta de presentación es obligatoria (mínimo 50 caracteres).
+        </p>
+      </div>
+
+      <div class="modal-actions" style="border-top:1px solid var(--border);padding-top:16px;">
+        <button type="button" class="btn btn-outline" onclick="document.getElementById('apply-modal').style.display='none'">Cancelar</button>
+        <button type="submit" class="btn btn-primary" style="min-width:160px;">🚀 Enviar aplicación</button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+<script>
+function validateApplyForm() {
+  const cl = document.getElementById('cover_letter_field');
+  const err = document.getElementById('cover-letter-error');
+  if (!cl.value || cl.value.trim().length < 50) {
+    err.style.display = 'block';
+    cl.focus();
+    return false;
+  }
+  err.style.display = 'none';
+  return true;
+}
+</script>
+{% endif %}
+
+{% endblock %}

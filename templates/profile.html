@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Mi perfil — JobWalpy{% endblock %}
+
+{% block content %}
+
+{% if request.query_params.get('updated') %}
+<div class="alert alert-success">✓ Perfil actualizado correctamente</div>
+{% endif %}
+
+<div class="profile-layout container" style="max-width:1200px;">
+
+  <!-- SIDEBAR -->
+  <aside class="profile-sidebar">
+    <div class="profile-card">
+      <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};">{{ user.avatar }}</div>
+      <h2>{{ user.name }}</h2>
+      <span class="role-badge">
+        {% if user.role == "buscador" %}🔍 Buscador{% else %}🏢 Empleador{% endif %}
+      </span>
+      {% if user.location %}
+      <p class="profile-location">📍 {{ user.location }}</p>
+      {% endif %}
+      {% if user.bio %}
+      <p class="profile-bio">{{ user.bio }}</p>
+      {% endif %}
+      {% if user.skills %}
+      <div class="skills-list">
+        {% for skill in user.skills %}
+        <span class="tag tag-soft">{{ skill }}</span>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="profile-main">
+
+    <!-- EDIT PROFILE -->
+    <div class="profile-section">
+      <h3>Editar perfil</h3>
+      <form action="/profile/update" method="post">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre *</label>
+            <input type="text" name="name" value="{{ user.name }}" required />
+          </div>
+          <div class="form-group">
+            <label>Ubicación</label>
+            <input type="text" name="location" value="{{ user.location or '' }}" placeholder="Ciudad, País" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Bio</label>
+          <textarea name="bio" rows="3" placeholder="Cuéntanos sobre ti…">{{ user.bio or '' }}</textarea>
+        </div>
+        {% if user.role == "buscador" %}
+        <div class="form-group">
+          <label>Habilidades</label>
+          <input type="text" name="skills" value="{{ user.skills | join(', ') if user.skills else '' }}" placeholder="Python, JavaScript, Diseño… (separadas por coma)" />
+        </div>
+        <div class="form-group">
+          <label>Experiencia</label>
+          <textarea name="experience" rows="3" placeholder="Describe tu experiencia laboral…">{{ user.experience or '' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label>Educación</label>
+          <textarea name="education" rows="2" placeholder="Titulo, institución…">{{ user.education or '' }}</textarea>
+        </div>
+        {% else %}
+        <input type="hidden" name="skills" value="" />
+        <input type="hidden" name="experience" value="" />
+        <input type="hidden" name="education" value="" />
+        {% endif %}
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- APPLICATIONS (buscador) -->
+    {% if user.role == "buscador" %}
+    <div class="profile-section">
+      <h3>Mis aplicaciones <span class="count-badge">{{ applications | length }}</span></h3>
+      {% if applications %}
+        {% for app in applications %}
+        <div class="application-row">
+          <div class="app-job-info">
+            <strong>{{ app.job.title }}</strong>
+            <span>{{ app.job.company }} · {{ app.job.location }}</span>
+          </div>
+          <div class="app-meta">
+            <span class="status-badge status-{{ app.status }}">{{ app.status.capitalize() }}</span>
+            <span class="app-date">{{ app.applied_at }}</span>
+          </div>
+          <a href="/jobs/{{ app.job_id }}" class="btn btn-outline btn-sm">Ver</a>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state small">
+          <span class="empty-icon">📋</span>
+          <h3>Sin aplicaciones</h3>
+          <p>Aún no has aplicado a ningún empleo.</p>
+          <a href="/jobs" class="btn btn-primary mt-sm">Explorar empleos</a>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- POSTED JOBS (empleador) -->
+    {% if user.role == "empleador" %}
+    <div class="profile-section">
+      <h3>Mis ofertas publicadas <span class="count-badge">{{ posted_jobs | length }}</span></h3>
+      {% if posted_jobs %}
+        {% for job in posted_jobs %}
+        <div class="application-row">
+          <div class="app-job-info">
+            <strong>{{ job.title }}</strong>
+            <span>{{ job.location }} · {{ job.type }}</span>
+          </div>
+          <div class="app-meta">
+            <span class="tag tag-soft">{{ job.category }}</span>
+            <span class="app-date">{{ job.posted_at }}</span>
+          </div>
+          <a href="/jobs/{{ job.id }}" class="btn btn-outline btn-sm">Ver</a>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state small">
+          <span class="empty-icon">📢</span>
+          <h3>Sin ofertas</h3>
+          <p>No has publicado ninguna oferta aún.</p>
+          <a href="/post-job" class="btn btn-primary mt-sm">Publicar empleo</a>
+        </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- DANGER ZONE -->
+    <div class="profile-section danger-zone">
+      <h3>Zona de peligro</h3>
+      <p>Eliminar tu cuenta es irreversible. Se borrarán todos tus datos.</p>
+      <button onclick="document.getElementById('delete-modal').style.display='flex'" class="btn btn-danger">
+        Eliminar cuenta
+      </button>
+    </div>
+
+  </main>
+</div>
+
+<!-- DELETE ACCOUNT MODAL -->
+<div class="modal-overlay" id="delete-modal" style="display:none;">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>¿Eliminar cuenta?</h3>
+      <button class="modal-close" onclick="document.getElementById('delete-modal').style.display='none'">✕</button>
+    </div>
+    <p style="color:var(--text-soft);">Esta acción es permanente. Perderás todos tus datos, aplicaciones y ofertas publicadas.</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="document.getElementById('delete-modal').style.display='none'">Cancelar</button>
+      <form action="/profile/delete" method="post" style="display:inline;">
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
