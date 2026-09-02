@@ -227,8 +227,10 @@ async def profile_page(request: Request):
             apps_with_jobs.append({**app, "job": job})
 
     posted_jobs = [j for j in db.get_jobs() if str(j.get("posted_by")) == str(user_id)]
+    portfolio_items = db.get_portfolio_by_user(user_id) if user.get("role") == "buscador" else []
     return templates.TemplateResponse(request=request, name="profile.html", context={
-        **ctx, "applications": apps_with_jobs, "posted_jobs": posted_jobs
+        **ctx, "applications": apps_with_jobs, "posted_jobs": posted_jobs,
+        "portfolio_items": portfolio_items
     })
 
 

@@ -1,3 +1,37 @@
+"""
+database.py — Capa de datos de JobWalpy (PostgreSQL / Neon)
+=============================================================
+
+Esta es la versión Postgres de database.py. Reemplaza a la versión SQLite.
+El cambio más importante para ti: TODAS las funciones públicas
+(get_user, create_buscador, verify_login, etc.) tienen EXACTAMENTE la misma
+firma que antes. Por eso routers/*.py no necesita ningún cambio — el punto
+de todo el diseño anterior era justo poder hacer este salto sin tocar el
+resto de la app.
+
+QUÉ CAMBIÓ respecto a la versión SQLite:
+  1. get_conn() ahora abre una conexión a Postgres (Neon) en vez de a un
+     archivo .db local.
+  2. Los placeholders de las consultas pasaron de "?" (estilo SQLite) a
+     "%s" (estilo Postgres/psycopg).
+  3. Se eliminó TODO el bloque de seed (SEED_EMPRESAS, SEED_BUSCADOR_DEMO,
+     seed_if_empty()). Si quieres datos de arranque, corre seed_demo.sql
+     directamente en Neon — database.py ya no sabe nada de datos de mentira.
+  4. init_db() sigue existiendo (crea las tablas si no existen) por
+     conveniencia — es inofensivo correrlo aunque ya hayas corrido
+     schema.sql a mano en Neon (usa "IF NOT EXISTS").
+
+QUÉ NECESITAS TENER CONFIGURADO:
+  - La variable de entorno DATABASE_URL con tu cadena de conexión de Neon,
+    algo como:
+    postgresql://usuario:password@ep-xxxxx-pooler.region.aws.neon.tech/jobwalpy?sslmode=require
+    (usa el connection string que dice "Pooled connection" en el dashboard
+    de Neon — no el directo — porque Vercel abre muchas conexiones cortas
+    y el pooler de Neon (pgbouncer) las administra sin agotar el límite
+    de conexiones de Postgres).
+  - El paquete `psycopg[binary]` instalado (ver requirements.txt).
+"""
+
 import json
 import os
 from contextlib import contextmanager
@@ -78,17 +112,20 @@ def init_db():
         """,
         """
         CREATE TABLE IF NOT EXISTS perfiles_buscador (
-            usuario_id      TEXT PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
-            nombre          TEXT NOT NULL,
-            telefono        TEXT DEFAULT '',
-            ubicacion       TEXT DEFAULT '',
-            bio             TEXT DEFAULT '',
-            skills          TEXT DEFAULT '[]',
-            experiencia     TEXT DEFAULT '',
-            educacion       TEXT DEFAULT '',
-            cv_url          TEXT DEFAULT '',
-            avatar          TEXT NOT NULL,
-            avatar_color    TEXT NOT NULL
+            usuario_id                TEXT PRIMARY KEY REFERENCES usuarios(id) ON DELETE CASCADE,
+            nombre                    TEXT NOT NULL,
+            telefono                  TEXT DEFAULT '',
+            ubicacion                 TEXT DEFAULT '',
+            bio                       TEXT DEFAULT '',
+            skills                    TEXT DEFAULT '[]',
+            experiencia               TEXT DEFAULT '',
+            educacion                 TEXT DEFAULT '',
+            cv_url                    TEXT DEFAULT '',
+            avatar                    TEXT NOT NULL,
+            avatar_color              TEXT NOT NULL,
+            profile_photo_url         TEXT DEFAULT '',
+            presentation_video_url    TEXT DEFAULT '',
+            media_status              TEXT NOT NULL DEFAULT 'pendiente'
         )
         """,
         """
@@ -177,6 +214,7 @@ def init_db():
             sender_id        TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
             texto            TEXT NOT NULL,
             leido            BOOLEAN NOT NULL DEFAULT FALSE,
+            eliminado        BOOLEAN NOT NULL DEFAULT FALSE,
             hora_display     TEXT NOT NULL,
             creado_at        TEXT NOT NULL
         )
@@ -187,12 +225,26 @@ def init_db():
         "CREATE INDEX IF NOT EXISTS idx_mensajes_conversacion ON mensajes (conversacion_id, id)",
 
         # ── MIGRACIONES para bases que ya tenían estas tablas creadas SIN
-        # estas dos columnas (aplicacion_id, leido). CREATE TABLE IF NOT
-        # EXISTS no las agrega a una tabla que ya existe — por eso hace
-        # falta este ALTER TABLE aparte. Es idempotente: si la columna ya
-        # existe, no hace nada.
+        # estas columnas/tabla (aplicacion_id, leido, y ahora las de MinIO).
         "ALTER TABLE conversaciones ADD COLUMN IF NOT EXISTS aplicacion_id BIGINT REFERENCES aplicaciones(id) ON DELETE SET NULL",
         "ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS leido BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE mensajes ADD COLUMN IF NOT EXISTS eliminado BOOLEAN NOT NULL DEFAULT FALSE",
+        "ALTER TABLE perfiles_buscador ADD COLUMN IF NOT EXISTS profile_photo_url TEXT DEFAULT ''",
+        "ALTER TABLE perfiles_buscador ADD COLUMN IF NOT EXISTS presentation_video_url TEXT DEFAULT ''",
+        "ALTER TABLE perfiles_buscador ADD COLUMN IF NOT EXISTS media_status TEXT NOT NULL DEFAULT 'pendiente'",
+
+        # ── Portafolio (propuesta de integración MinIO de tu compañero/a) ──
+        """
+        CREATE TABLE IF NOT EXISTS portafolios (
+            id            TEXT PRIMARY KEY,
+            usuario_id    TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+            titulo        TEXT NOT NULL,
+            descripcion   TEXT DEFAULT '',
+            archivo_url   TEXT NOT NULL,
+            creado_at     TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS idx_portafolios_usuario ON portafolios (usuario_id)",
 
         # ── VISTA opcional, inspirada en la propuesta de tu compañero/a
         # (su "ofertas_activas"), adaptada a los nombres de columnas de
@@ -228,19 +280,12 @@ def _create_buscador_row(data: dict, verificado: bool, avatar_index: int) -> str
     uid = new_id()
     avatar, color = _avatar_for(data["name"], avatar_index)
     with get_conn() as conn:
-        try:
-            conn.execute(
-                "INSERT INTO usuarios (id, email, password_hash, rol, verificado, activo, fecha_registro) "
-                "VALUES (%s, %s, %s, 'buscador', %s, TRUE, %s)",
-                (uid, data["email"].lower().strip(), hash_password(data["password"]),
-                 verificado, str(date.today())),
-            )
-        except psycopg.errors.UniqueViolation:
-            # Última línea de defensa contra una condición de carrera: el
-            # SELECT previo en create_buscador() ya revisó que el email no
-            # existiera, pero si dos registros llegan casi al mismo tiempo,
-            # solo el UNIQUE de la tabla puede detectarlo con certeza.
-            raise EmailYaRegistradoError(f"El correo {data['email']} ya está registrado.")
+        conn.execute(
+            "INSERT INTO usuarios (id, email, password_hash, rol, verificado, activo, fecha_registro) "
+            "VALUES (%s, %s, %s, 'buscador', %s, TRUE, %s)",
+            (uid, data["email"].lower().strip(), hash_password(data["password"]),
+             verificado, str(date.today())),
+        )
         conn.execute(
             "INSERT INTO perfiles_buscador "
             "(usuario_id, nombre, telefono, ubicacion, bio, skills, experiencia, educacion, cv_url, avatar, avatar_color) "
@@ -255,35 +300,22 @@ def _create_empleador_row(data: dict, verificado: bool, verificado_legal: bool, 
     uid = new_id()
     avatar, color = _avatar_for(data["company_name"], avatar_index)
     with get_conn() as conn:
-        try:
-            conn.execute(
-                "INSERT INTO usuarios (id, email, password_hash, rol, verificado, activo, fecha_registro) "
-                "VALUES (%s, %s, %s, 'empleador', %s, TRUE, %s)",
-                (uid, data["email"].lower().strip(), hash_password(data["password"]),
-                 verificado, str(date.today())),
-            )
-        except psycopg.errors.UniqueViolation:
-            # Mismo caso que en _create_buscador_row: última defensa contra
-            # una condición de carrera en el email.
-            raise EmailYaRegistradoError(f"El correo {data['email']} ya está registrado.")
-        try:
-            conn.execute(
-                "INSERT INTO perfiles_empleador "
-                "(usuario_id, contact_name, telefono, company_name, legal_name, tax_id, website, address, "
-                " industry, size, ubicacion, bio, documento_path, verificado_legal, avatar, avatar_color) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, '', %s, %s, %s, %s)",
-                (uid, data["contact_name"], data.get("phone", ""), data["company_name"],
-                 data.get("legal_name", ""), data.get("tax_id"), data.get("website", ""),
-                 data.get("address", ""), data.get("industry", ""), data.get("size", ""),
-                 data.get("location", ""), data.get("document", ""), verificado_legal, avatar, color),
-            )
-        except psycopg.errors.UniqueViolation:
-            # Misma condición de carrera pero sobre tax_id (NIT/RUT). El
-            # rollback del context manager revierte también el INSERT en
-            # `usuarios` de arriba, así que no queda una cuenta huérfana.
-            raise TaxIdYaRegistradoError(
-                f"El NIT/RUT {data['tax_id']} ya está asociado a otra cuenta empresarial."
-            )
+        conn.execute(
+            "INSERT INTO usuarios (id, email, password_hash, rol, verificado, activo, fecha_registro) "
+            "VALUES (%s, %s, %s, 'empleador', %s, TRUE, %s)",
+            (uid, data["email"].lower().strip(), hash_password(data["password"]),
+             verificado, str(date.today())),
+        )
+        conn.execute(
+            "INSERT INTO perfiles_empleador "
+            "(usuario_id, contact_name, telefono, company_name, legal_name, tax_id, website, address, "
+            " industry, size, ubicacion, bio, documento_path, verificado_legal, avatar, avatar_color) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, '', %s, %s, %s, %s)",
+            (uid, data["contact_name"], data.get("phone", ""), data["company_name"],
+             data.get("legal_name", ""), data.get("tax_id"), data.get("website", ""),
+             data.get("address", ""), data.get("industry", ""), data.get("size", ""),
+             data.get("location", ""), data.get("document", ""), verificado_legal, avatar, color),
+        )
     return uid
 
 
@@ -307,6 +339,9 @@ def _row_to_dict(conn, row: dict) -> dict:
             "bio": p["bio"], "skills": json.loads(p["skills"] or "[]"),
             "experience": p["experiencia"], "education": p["educacion"],
             "cv_url": p["cv_url"], "avatar": p["avatar"], "avatar_color": p["avatar_color"],
+            "profile_photo_url": p["profile_photo_url"],
+            "presentation_video_url": p["presentation_video_url"],
+            "media_status": p["media_status"],
             "verified_company": False,
         })
     else:
@@ -461,7 +496,10 @@ def update_user(user_id: str, data: dict) -> dict | None:
         if user["role"] == "buscador":
             campos = {"name": "nombre", "bio": "bio", "location": "ubicacion",
                       "phone": "telefono", "experience": "experiencia",
-                      "education": "educacion", "cv_url": "cv_url"}
+                      "education": "educacion", "cv_url": "cv_url",
+                      "profile_photo_url": "profile_photo_url",
+                      "presentation_video_url": "presentation_video_url",
+                      "media_status": "media_status"}
             sets, valores = [], []
             for k, columna in campos.items():
                 if k in data and data[k] is not None:
@@ -728,13 +766,18 @@ def _message_to_dict(m: dict) -> dict:
     # viejos se siguen mostrando con su nombre actualizado — como en
     # cualquier chat real.
     sender = get_user(m["sender_id"]) or {"name": "Usuario", "avatar": "?", "avatar_color": "#6366f1"}
+    eliminado = bool(m.get("eliminado", False))
     return {
         "id": str(m["id"]),  # BIGSERIAL: entero autoincremental real, no un timestamp aproximado
         "sender_id": m["sender_id"],
         "sender_name": sender.get("name", "Usuario"),
         "sender_avatar": sender.get("avatar", "?"),
         "sender_color": sender.get("avatar_color", "#6366f1"),
-        "text": m["texto"],
+        # Si está eliminado, NUNCA se manda el texto original al frontend —
+        # no es solo "ocultarlo visualmente", el contenido real ni siquiera
+        # sale del servidor.
+        "text": "Mensaje eliminado" if eliminado else m["texto"],
+        "deleted": eliminado,
         "read": bool(m["leido"]),
         "at": m["hora_display"],
     }
@@ -755,6 +798,48 @@ def add_message_to_conversation(conv_id: str, sender_id: str, text: str) -> dict
             (text, hora_display, conv_id),
         )
     return _message_to_dict(row)
+
+
+def delete_message(message_id: str, user_id: str) -> bool:
+    """
+    Borrado suave: el mensaje deja de mostrar su texto real (se reemplaza
+    por "Mensaje eliminado"), pero la fila se conserva para no romper el
+    orden/conteo de la conversación — igual que WhatsApp o Slack.
+
+    Solo el AUTOR del mensaje puede borrarlo (se verifica sender_id = user_id
+    en la misma consulta: si el mensaje no es tuyo, no se actualiza nada y
+    la función devuelve False).
+    """
+    try:
+        mid = int(message_id)
+    except (TypeError, ValueError):
+        return False
+
+    with get_conn() as conn:
+        row = conn.execute(
+            "SELECT conversacion_id FROM mensajes WHERE id = %s AND sender_id = %s",
+            (mid, str(user_id)),
+        ).fetchone()
+        if not row:
+            return False  # no es tu mensaje, o no existe
+
+        conn.execute("UPDATE mensajes SET eliminado = TRUE WHERE id = %s", (mid,))
+
+        # Si el mensaje borrado era el "último mensaje" que se muestra en la
+        # lista de conversaciones, hay que recalcularlo con el mensaje
+        # visible más reciente que quede — si no, el borrado no se reflejaría
+        # ahí (se seguiría viendo la vista previa del mensaje ya eliminado).
+        conv_id = row["conversacion_id"]
+        ultimo = conn.execute(
+            "SELECT texto, hora_display FROM mensajes "
+            "WHERE conversacion_id = %s AND eliminado = FALSE ORDER BY id DESC LIMIT 1",
+            (conv_id,),
+        ).fetchone()
+        conn.execute(
+            "UPDATE conversaciones SET last_message = %s, last_at = %s WHERE id = %s",
+            (ultimo["texto"] if ultimo else "", ultimo["hora_display"] if ultimo else "", conv_id),
+        )
+    return True
 
 
 def get_new_messages(conv_id: str, since_id: int) -> list:
@@ -792,3 +877,49 @@ def is_participant(conv_id: str, user_id: str) -> bool:
             (conv_id, str(user_id), str(user_id)),
         ).fetchone()
     return row is not None
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Portafolio (propuesta de integración MinIO) — foto de perfil y video de
+# presentación viven como columnas en perfiles_buscador (arriba, junto con
+# update_user); esto es solo la lista de archivos de portafolio, que sí
+# necesita su propia tabla porque un usuario puede tener varios.
+# ══════════════════════════════════════════════════════════════════════════════
+
+def _portfolio_row_to_dict(row: dict) -> dict:
+    return {
+        "id": row["id"], "user_id": row["usuario_id"], "title": row["titulo"],
+        "description": row["descripcion"], "file_url": row["archivo_url"],
+        "created_at": row["creado_at"],
+    }
+
+
+def create_portfolio_item(user_id: str, title: str, description: str, file_url: str) -> dict:
+    item_id = new_id()
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO portafolios (id, usuario_id, titulo, descripcion, archivo_url, creado_at) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (item_id, str(user_id), title, description, file_url, datetime.utcnow().isoformat()),
+        )
+    with get_conn() as conn:
+        row = conn.execute("SELECT * FROM portafolios WHERE id = %s", (item_id,)).fetchone()
+    return _portfolio_row_to_dict(row)
+
+
+def get_portfolio_by_user(user_id: str) -> list:
+    with get_conn() as conn:
+        rows = conn.execute(
+            "SELECT * FROM portafolios WHERE usuario_id = %s ORDER BY creado_at DESC", (str(user_id),)
+        ).fetchall()
+    return [_portfolio_row_to_dict(r) for r in rows]
+
+
+def delete_portfolio_item(item_id: str, user_id: str) -> bool:
+    """Solo borra si el item realmente pertenece a user_id — evita que alguien
+    borre el portafolio de otra persona adivinando el id del archivo."""
+    with get_conn() as conn:
+        cur = conn.execute(
+            "DELETE FROM portafolios WHERE id = %s AND usuario_id = %s", (item_id, str(user_id))
+        )
+        return cur.rowcount > 0

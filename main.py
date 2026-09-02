@@ -11,6 +11,7 @@ from routers.jobs import router as jobs_router
 from routers.users import router as users_router
 from routers.applications import router as applications_router
 from routers.chat import router as chat_router
+from routers.media import router as media_router
 
 import database as db
 
@@ -22,6 +23,7 @@ app.include_router(jobs_router)
 app.include_router(users_router)
 app.include_router(applications_router)
 app.include_router(chat_router)
+app.include_router(media_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user_id: str = Cookie(default=None)):
