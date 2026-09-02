@@ -1,4 +1,3 @@
-
 import json
 import os
 from contextlib import contextmanager
@@ -7,11 +6,11 @@ from datetime import date, datetime, timedelta
 import psycopg
 from psycopg.rows import dict_row
 
-from auth import hash_   password, verify_password, new_id, new_token
+from auth import hash_password, verify_password, new_id, new_token
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if not DATABASE_URL:
-    raise RuntimeErr or(
+    raise RuntimeError(
         "Falta la variable de entorno DATABASE_URL. Copia el 'Pooled connection "
         "string' desde el dashboard de Neon (Connection Details) y configúrala "
         "como variable de entorno (localmente en tu .env, y en Vercel en "
