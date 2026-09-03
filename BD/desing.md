@@ -27,11 +27,7 @@ Se excluyen del esquema relacional primario el procesamiento directo de transacc
 
 El dominio se modela utilizando un enfoque híbrido relacional con soporte para tipos de datos avanzados (JSONB y Geometría espacial de PostGIS):
 
-## 3. Entidades y Atributos (*Entities & Attributes*)
-
-El dominio se modela utilizando un enfoque híbrido relacional con soporte para tipos de datos avanzados (JSONB y Geometría espacial de PostGIS):
-
-![Diagrama Entidad Relación de JobWalpy](entidadrelacion.png)
+![Diagrama Entidad Relación de JobWalpy](actualizacionmed.png)
 
 ### 3.1 `users` (Usuarios)
 
@@ -172,3 +168,5 @@ El uso de `JSONB` para las habilidades imposibilita la aplicación de restriccio
 ## Video Pagina
 
 https://youtu.be/aJgSXRMDmOw
+
+https://youtube.com/shorts/NbR4zSGgvXQ?feature=share
