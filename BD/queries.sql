@@ -1,328 +1,217 @@
 -- ============================================================
---  JobWalpy - Módulo: Usuarios y Perfiles - Consultas típicas
+--  JobWalpy - Consultas típicas .
 -- ============================================================
- 
+
 -- ------------------------------------------------------------
 -- REGISTRO Y AUTENTICACIÓN
 -- ------------------------------------------------------------
- 
--- Registrar una nueva cuenta (paso 1: solo datos de auth)
-INSERT INTO Usuario (email, password, rol)
-VALUES ('juan@example.com', 'hashed_password', 'buscador')
-RETURNING id_usuario;
- 
+
+-- Registrar una nueva cuenta de buscador (paso 1: solo datos de auth)
+-- NOTA: el $2$ es un ejemplo de hash — en el código real lo genera
+-- auth.hash_password(), nunca se escribe la contraseña en texto plano.
+INSERT INTO usuarios (id, email, password_hash, rol, verificado, activo, fecha_registro)
+VALUES ('uuid-generado-por-python', 'juan@example.com', 'salt$hash_real', 'buscador', FALSE, TRUE, '2026-09-02');
+
 -- Crear el perfil asociado a esa cuenta (paso 2, justo después del registro)
-INSERT INTO Perfil (id_usuario, nombre_completo)
-VALUES ('11111111-1111-1111-1111-111111111111', 'Juan Pérez');
- 
+INSERT INTO perfiles_buscador (usuario_id, nombre, avatar, avatar_color)
+VALUES ('uuid-generado-por-python', 'Juan Pérez', 'JP', '#6366f1');
+
 -- Login: buscar usuario por email para validar contraseña
-SELECT id_usuario, email, password, rol, activo
-FROM Usuario
+SELECT id, email, password_hash, rol, activo
+FROM usuarios
 WHERE email = 'juan@example.com';
- 
--- Registrar el último acceso al iniciar sesión
-UPDATE Usuario
-SET ultimo_acceso = now()
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Cambiar contraseña
-UPDATE Usuario
-SET password = 'nuevo_hash'
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Desactivar una cuenta sin borrar sus datos (soft delete)
-UPDATE Usuario
+
+-- Desactivar una cuenta sin borrar sus datos (borrado suave — así funciona SIEMPRE en este proyecto)
+UPDATE usuarios
 SET activo = FALSE
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Eliminar una cuenta por completo (borra en cascada su perfil y redes sociales)
-DELETE FROM Usuario WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
- 
+WHERE id = 'uuid-del-usuario';
+
 -- ------------------------------------------------------------
 -- PERFIL
 -- ------------------------------------------------------------
- 
--- Ver el perfil público de un usuario (para que otros lo vean)
-SELECT * FROM vista_perfil_publico
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Editar datos generales del perfil
-UPDATE Perfil
-SET biografia = 'Desarrollador backend con 3 años de experiencia',
-    ubicacion = 'Bogotá',
-    telefono = '3001234567',
-    fecha_actualizacion = now()
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Actualizar habilidades, experiencia y educación (perfil de un buscador de empleo)
-UPDATE Perfil
-SET skills = ARRAY['Python', 'SQL', 'FastAPI'],
-    experiencia = '3 años como desarrollador backend',
-    educacion = 'Ingeniería de Sistemas',
-    fecha_actualizacion = now()
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Actualizar avatar
-UPDATE Perfil
-SET avatar_url = 'https://cdn.jobwalpy.com/avatars/juan.png'
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
- 
--- Buscar perfiles por nombre o habilidad (para que empleadores encuentren candidatos)
-SELECT * FROM vista_perfil_publico
-WHERE rol = 'buscador'
-  AND (nombre_completo ILIKE '%juan%' OR 'Python' = ANY(skills));
- 
- 
--- ------------------------------------------------------------
--- REDES SOCIALES
--- ------------------------------------------------------------
- 
--- Agregar un enlace de red social al perfil
-INSERT INTO RedSocial (id_perfil, plataforma, url)
-VALUES ('22222222-2222-2222-2222-222222222222', 'linkedin', 'https://linkedin.com/in/juanperez');
- 
--- Ver todos los enlaces de un perfil
-SELECT plataforma, url
-FROM RedSocial
-WHERE id_perfil = '22222222-2222-2222-2222-222222222222';
- 
--- Eliminar un enlace específico
-DELETE FROM RedSocial WHERE id_red = '33333333-3333-3333-3333-333333333333';
 
--- ------------------------------------------------------------
--- USUARIOS
--- ------------------------------------------------------------
-
--- Registrar un nuevo usuario (buscador de empleo o empleador)
-INSERT INTO Usuario (nombre, email, password, rol, ubicacion)
-VALUES ('Juan Pérez', 'juan@example.com', 'hashed_password', 'buscador', 'Medellín');
-
--- Buscar usuario por email, para el login
-SELECT * FROM Usuario WHERE email = 'juan@example.com';
-
--- Actualizar el perfil de un usuario (bio, ubicación, habilidades)
-UPDATE Usuario
+-- Editar datos generales del perfil de un buscador
+UPDATE perfiles_buscador
 SET bio = 'Desarrollador backend con 3 años de experiencia',
     ubicacion = 'Bogotá',
-    skills = ARRAY['Python', 'SQL', 'FastAPI']
-WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
+    telefono = '3001234567'
+WHERE usuario_id = 'uuid-del-usuario';
 
--- Eliminar una cuenta de usuario (borra en cascada sus ofertas y postulaciones)
-DELETE FROM Usuario WHERE id_usuario = '11111111-1111-1111-1111-111111111111';
+-- Actualizar habilidades, experiencia y educación
+-- (skills se guarda como texto JSON, ej: '["Python", "SQL", "FastAPI"]')
+UPDATE perfiles_buscador
+SET skills = '["Python", "SQL", "FastAPI"]',
+    experiencia = '3 años como desarrollador backend',
+    educacion = 'Ingeniería de Sistemas'
+WHERE usuario_id = 'uuid-del-usuario';
 
+-- Actualizar foto de perfil (la URL viene de MinIO, el archivo NO se guarda en la base de datos)
+UPDATE perfiles_buscador
+SET profile_photo_url = 'https://tu-endpoint-minio/jobwalpy-media/profile-photos/uuid-del-usuario.jpg'
+WHERE usuario_id = 'uuid-del-usuario';
+
+-- Buscar perfiles de buscadores por nombre o habilidad (para que empleadores encuentren candidatos)
+SELECT u.id, p.nombre, p.skills
+FROM usuarios u
+JOIN perfiles_buscador p ON p.usuario_id = u.id
+WHERE u.rol = 'buscador'
+  AND u.activo = TRUE
+  AND (p.nombre ILIKE '%juan%' OR p.skills ILIKE '%Python%');
 
 -- ------------------------------------------------------------
--- EMPRESAS
+-- EMPRESAS (perfiles_empleador — no es tabla aparte, es el perfil del rol empleador)
 -- ------------------------------------------------------------
 
--- Crear una empresa a nombre de un empleador
-INSERT INTO Empresa (id_creador, nombre, descripcion, sitio_web)
-VALUES ('22222222-2222-2222-2222-222222222222', 'TechCorp', 'Empresa de software', 'https://techcorp.com');
+-- Registrar una empresa: primero el usuario base
+INSERT INTO usuarios (id, email, password_hash, rol, verificado, activo, fecha_registro)
+VALUES ('uuid-generado-por-python', 'contacto@techcorp.com', 'salt$hash_real', 'empleador', FALSE, TRUE, '2026-09-02');
 
--- Ver todas las empresas creadas por un usuario
-SELECT * FROM Empresa WHERE id_creador = '22222222-2222-2222-2222-222222222222';
+-- Después su perfil de empresa, con el NIT obligatorio y único
+INSERT INTO perfiles_empleador (usuario_id, contact_name, company_name, legal_name, tax_id, address, industry, ubicacion, avatar, avatar_color, verificado_legal)
+VALUES ('uuid-generado-por-python', 'Ana Gómez', 'TechCorp', 'TechCorp S.A.S.', '900123456-1', 'Calle 1', 'Tecnología', 'Medellín', 'TC', '#0ea5e9', FALSE);
 
+-- Ver los datos de la empresa de un usuario
+SELECT * FROM perfiles_empleador WHERE usuario_id = 'uuid-del-usuario';
 
 -- ------------------------------------------------------------
--- OFERTAS DE TRABAJO
+-- EMPLEOS
 -- ------------------------------------------------------------
 
 -- Publicar una nueva oferta de empleo
-INSERT INTO OfertaTrabajo (
-    id_publicador, id_empresa, titulo, descripcion,
-    salario_min, salario_max, ubicacion, tipo_empleo, categoria,
-    requisitos, beneficios
+INSERT INTO empleos (
+    id, titulo, empresa, ubicacion, salario_min, salario_max,
+    tipo, categoria, descripcion, requisitos, beneficios, publicado_por, publicado_at, activo
 )
 VALUES (
-    '22222222-2222-2222-2222-222222222222', NULL, 'Desarrollador Backend',
+    'uuid-generado-por-python', 'Desarrollador Backend', 'TechCorp', 'Medellín',
+    3000000, 5000000, 'Tiempo completo', 'Tecnología',
     'Buscamos desarrollador con experiencia en FastAPI y Postgres',
-    3000000, 5000000, 'Medellín', 'Tiempo completo', 'Tecnología',
-    ARRAY['Python', 'SQL'], ARRAY['Trabajo remoto', 'Seguro médico']
+    '["Python", "SQL"]', '["Trabajo remoto", "Seguro médico"]',
+    'uuid-del-empleador', '2026-09-02', TRUE
 );
 
--- Listar todas las ofertas activas, más recientes primero (página principal de empleos)
-SELECT * FROM vista_ofertas_activas
-ORDER BY fecha_publicacion DESC;
+-- Listar todos los empleos, más recientes primero (la base de la página /jobs)
+SELECT * FROM empleos ORDER BY publicado_at DESC, id DESC;
 
--- Buscar ofertas por palabra clave en el título o descripción
-SELECT * FROM vista_ofertas_activas
-WHERE titulo ILIKE '%desarrollador%' OR descripcion ILIKE '%desarrollador%';
+-- Buscar empleos por palabra clave (el filtrado real por texto pasa en Python, no aquí —
+-- esto es solo la consulta base que trae TODOS los empleos antes de ese filtro)
+SELECT * FROM empleos;
 
--- Filtrar ofertas por ubicación, categoría y salario mínimo (filtros de búsqueda)
-SELECT * FROM vista_ofertas_activas
-WHERE ubicacion = 'Medellín'
-  AND categoria = 'Tecnología'
-  AND salario_min >= 3000000;
+-- Ver el detalle de un empleo específico
+SELECT * FROM empleos WHERE id = 'uuid-del-empleo';
 
--- Ver el detalle de una oferta específica
-SELECT * FROM vista_ofertas_activas WHERE id_oferta = '33333333-3333-3333-3333-333333333333';
+-- Ver todos los empleos publicados por un empleador (su dashboard)
+SELECT * FROM empleos WHERE publicado_por = 'uuid-del-empleador';
 
--- Ver todas las ofertas publicadas por un empleador (su dashboard)
-SELECT * FROM OfertaTrabajo WHERE id_publicador = '22222222-2222-2222-2222-222222222222';
+-- Cerrar un empleo (ya no acepta más postulaciones)
+UPDATE empleos SET activo = FALSE WHERE id = 'uuid-del-empleo';
 
--- Cerrar una oferta (ya no acepta más postulaciones)
-UPDATE OfertaTrabajo
-SET estado = 'cerrada'
-WHERE id_oferta = '33333333-3333-3333-3333-333333333333';
-
--- Eliminar una oferta (borra en cascada sus postulaciones)
-DELETE FROM OfertaTrabajo WHERE id_oferta = '33333333-3333-3333-3333-333333333333';
-
+-- Eliminar un empleo (SÍ es borrado real, no suave — arrastra en cascada sus aplicaciones)
+DELETE FROM empleos WHERE id = 'uuid-del-empleo';
 
 -- ------------------------------------------------------------
--- POSTULACIONES
+-- APLICACIONES
 -- ------------------------------------------------------------
 
--- Un candidato se postula a una oferta
-INSERT INTO Postulacion (
-    id_oferta, id_candidato, carta_presentacion,
-    telefono, anos_experiencia, nivel_educativo, disponibilidad, expectativa_salarial
+-- Un candidato se postula a un empleo
+INSERT INTO aplicaciones (
+    empleo_id, usuario_id, carta_presentacion, telefono,
+    anios_experiencia, nivel_educativo, disponibilidad, pretension_salarial, estado, aplicado_at
 )
 VALUES (
-    '33333333-3333-3333-3333-333333333333', '11111111-1111-1111-1111-111111111111',
+    'uuid-del-empleo', 'uuid-del-candidato',
     'Estoy muy interesado en esta posición porque...',
-    '3001234567', '3 años', 'Universitario', 'Inmediata', '4000000'
+    '3001234567', '3 años', 'Universitario', 'Inmediata', '4000000', 'pendiente', '2026-09-02'
 );
 
--- Ver todas las postulaciones que ha hecho un candidato (su historial)
-SELECT p.*, o.titulo, o.ubicacion
-FROM Postulacion p
-JOIN OfertaTrabajo o ON o.id_oferta = p.id_oferta
-WHERE p.id_candidato = '11111111-1111-1111-1111-111111111111'
-ORDER BY p.fecha_postulacion DESC;
+-- Ver todas las aplicaciones que ha hecho un candidato (su historial)
+SELECT a.*, e.titulo, e.ubicacion
+FROM aplicaciones a
+JOIN empleos e ON e.id = a.empleo_id
+WHERE a.usuario_id = 'uuid-del-candidato'
+ORDER BY a.id DESC;
 
--- Ver todos los postulantes de una oferta (vista del empleador)
-SELECT p.*, u.nombre, u.email
-FROM Postulacion p
-JOIN Usuario u ON u.id_usuario = p.id_candidato
-WHERE p.id_oferta = '33333333-3333-3333-3333-333333333333'
-ORDER BY p.fecha_postulacion DESC;
+-- Ver todos los postulantes de un empleo (vista del empleador)
+SELECT a.*, u.email
+FROM aplicaciones a
+JOIN usuarios u ON u.id = a.usuario_id
+WHERE a.empleo_id = 'uuid-del-empleo'
+ORDER BY a.id DESC;
 
--- Cambiar el estado de una postulación (el empleador acepta o rechaza)
-UPDATE Postulacion
-SET estado = 'aceptado'
-WHERE id_postulacion = '44444444-4444-4444-4444-444444444444';
+-- Cambiar el estado de una aplicación (el empleador acepta o rechaza)
+UPDATE aplicaciones SET estado = 'aceptado' WHERE id = 1;
 
--- Contar cuántas postulaciones tiene cada oferta (métricas del dashboard)
-SELECT o.titulo, COUNT(p.id_postulacion) AS total_postulantes
-FROM OfertaTrabajo o
-LEFT JOIN Postulacion p ON p.id_oferta = o.id_oferta
-GROUP BY o.id_oferta, o.titulo
+-- Contar cuántas aplicaciones tiene cada empleo (métricas del dashboard)
+SELECT e.titulo, COUNT(a.id) AS total_postulantes
+FROM empleos e
+LEFT JOIN aplicaciones a ON a.empleo_id = e.id
+GROUP BY e.id, e.titulo
 ORDER BY total_postulantes DESC;
 
--- Evitar postulaciones duplicadas: verificar si un candidato ya se postuló a esta oferta
-SELECT 1 FROM Postulacion
-WHERE id_oferta = '33333333-3333-3333-3333-333333333333'
-  AND id_candidato = '11111111-1111-1111-1111-111111111111';
+-- Evitar postulaciones duplicadas: la tabla ya tiene UNIQUE(empleo_id, usuario_id),
+-- pero el código también revisa antes de intentar insertar:
+SELECT 1 FROM aplicaciones
+WHERE empleo_id = 'uuid-del-empleo' AND usuario_id = 'uuid-del-candidato';
 
--- Retirar una postulación
-DELETE FROM Postulacion WHERE id_postulacion = '44444444-4444-4444-4444-444444444444';
+-- ------------------------------------------------------------
+-- MENSAJERÍA (CONVERSACIONES Y MENSAJES)
+-- ------------------------------------------------------------
 
--- 1. OPERACIONES DE REGISTRO Y AUTENTICACIÓN (INSERT)
--- Registrar un nuevo usuario candidato
-INSERT INTO "usuarios" ("nombre", "apellido", "email", "password_hash", "rol")
-VALUES ('Juliana', 'Restrepo', 'juliana@example.com', '$2b$12$hash_ejemplo', 'candidato');
-
--- Crear el perfil profesional del candidato, asociado al usuario recién creado
-INSERT INTO "candidatos" ("id_usuario", "telefono", "titulo_profesional")
-VALUES (7, '3001234567', 'Desarrolladora Full Stack');
-
--- Registrar un nuevo usuario de tipo empresa
-INSERT INTO "usuarios" ("nombre", "apellido", "email", "password_hash", "rol")
-VALUES ('TechCorp', 'Colombia', 'contacto@techcorp.com', '$2b$12$hash_ejemplo', 'empresa');
-
--- Crear el perfil de la empresa, asociado al usuario recién creado
-INSERT INTO "empresas" ("id_usuario", "nombre_empresa", "descripcion", "sitio_web")
-VALUES (1, 'TechCorp Colombia', 'Empresa de desarrollo de software', 'https://techcorp.com');
-
--- 2. PUBLICACIÓN Y BÚSQUEDA DE EMPLEOS (INSERT / SELECT)
--- Una empresa publica una nueva oferta laboral
-INSERT INTO "ofertas_empleo" ("id_empresa", "titulo", "descripcion", "ubicacion", "salario")
-VALUES (
-    1,
-    'Desarrollador Full Stack',
-    'Tiempo completo. Categoría: Tecnología.',
-    'Bogotá, Colombia',
-    5500000
-);
-
--- Buscar ofertas activas por categoría/ubicación (usa la vista ofertas_activas)
-SELECT * FROM "ofertas_activas"
-WHERE "ubicacion" LIKE '%Bogotá%'
-ORDER BY "fecha_publicacion" DESC;
-
--- Buscar una oferta específica por su título
-SELECT * FROM "ofertas_empleo"
-WHERE "titulo" = 'Desarrollador Full Stack';
-
-
--- 3. FLUJO DE POSTULACIÓN Y SELECCIÓN (INSERT / UPDATE / SELECT)
--- Un candidato se postula a una vacante existente
-INSERT INTO "postulaciones" ("id_candidato", "id_oferta", "estado")
-VALUES (1, 1, 'pendiente');
-
--- La empresa cambia el estado de una postulación a "aceptado"
-UPDATE "postulaciones"
-SET "estado" = 'aceptado'
-WHERE "id_postulacion" = 1;
-
--- Ver todas las postulaciones de un candidato, con el nombre de la oferta y la empresa
-SELECT p."id_postulacion", o."titulo", e."nombre_empresa", p."estado"
-FROM "postulaciones" p
-JOIN "ofertas_empleo" o ON p."id_oferta" = o."id_oferta"
-JOIN "empresas" e ON o."id_empresa" = e."id_empresa"
-WHERE p."id_candidato" = 1;
-
-
--- 4. MENSAJERÍA ENTRE CANDIDATO Y EMPRESA (INSERT / SELECT / UPDATE)
--- Abrir una conversación asociada a una postulación
-INSERT INTO "conversaciones" ("id_postulacion")
-VALUES (1);
-
--- Añadir a ambas partes como participantes de la conversación
-INSERT INTO "participantes" ("id_conversacion", "id_usuario")
-VALUES (1, 7), (1, 1);
+-- Abrir/crear una conversación entre dos usuarios (el id se arma en Python:
+-- los dos ids de usuario, ordenados alfabéticamente y unidos con "__")
+INSERT INTO conversaciones (id, participante_a, participante_b, aplicacion_id, last_message, last_at, created_at)
+VALUES ('uuid-a__uuid-b', 'uuid-a', 'uuid-b', NULL, '', '', '2026-09-02T10:00:00')
+ON CONFLICT (id) DO NOTHING;
 
 -- Enviar un mensaje dentro de la conversación
-INSERT INTO "mensajes" ("id_conversacion", "id_emisor", "contenido")
-VALUES (1, 1, 'Hola Juliana, vimos tu postulación, ¿tienes disponibilidad esta semana para una entrevista?');
+INSERT INTO mensajes (conversacion_id, sender_id, texto, leido, eliminado, hora_display, creado_at)
+VALUES ('uuid-a__uuid-b', 'uuid-a', 'Hola, vimos tu postulación, ¿tienes disponibilidad esta semana?', FALSE, FALSE, '10:05', '2026-09-02T10:05:00');
 
 -- Obtener el historial completo de mensajes de una conversación, en orden
-SELECT m."fecha_envio", u."nombre", m."contenido"
-FROM "mensajes" m
-JOIN "usuarios" u ON m."id_emisor" = u."id_usuario"
-WHERE m."id_conversacion" = 1
-ORDER BY m."fecha_envio";
+SELECT m.creado_at, u.email, m.texto
+FROM mensajes m
+JOIN usuarios u ON m.sender_id = u.id
+WHERE m.conversacion_id = 'uuid-a__uuid-b'
+ORDER BY m.id ASC;
 
 -- Contar los mensajes no leídos que le quedan pendientes a un usuario en un chat
 SELECT COUNT(*) AS mensajes_no_leidos
-FROM "mensajes"
-WHERE "id_conversacion" = 1
-  AND "id_emisor" != 7
-  AND "leido" = FALSE;
+FROM mensajes
+WHERE conversacion_id = 'uuid-a__uuid-b'
+  AND sender_id != 'uuid-a'
+  AND leido = FALSE;
 
--- Marcar como leídos los mensajes cuando el candidato abre la conversación
-UPDATE "mensajes"
-SET "leido" = TRUE
-WHERE "id_conversacion" = 1
-  AND "id_emisor" != 7
-  AND "leido" = FALSE;
+-- Marcar como leídos los mensajes cuando alguien abre la conversación
+UPDATE mensajes
+SET leido = TRUE
+WHERE conversacion_id = 'uuid-a__uuid-b'
+  AND sender_id != 'uuid-a'
+  AND leido = FALSE;
 
+-- Eliminar un mensaje (borrado suave — el texto real nunca se vuelve a mostrar)
+UPDATE mensajes SET eliminado = TRUE WHERE id = 1;
 
--- 5. ELIMINACIÓN Y MANTENIMIENTO (DELETE)
--- Eliminar una oferta de empleo (por cascada elimina también sus postulaciones)
-DELETE FROM "ofertas_empleo"
-WHERE "id_oferta" = 1;
+-- ------------------------------------------------------------
+-- PORTAFOLIO
+-- ------------------------------------------------------------
 
--- Eliminar un usuario (por cascada elimina su perfil, postulaciones y mensajes)
-DELETE FROM "usuarios"
-WHERE "id_usuario" = 7;
+-- Agregar un elemento al portafolio de un candidato
+INSERT INTO portafolios (id, usuario_id, titulo, descripcion, archivo_url, creado_at)
+VALUES ('uuid-generado-por-python', 'uuid-del-candidato', 'Proyecto Backend', 'API en FastAPI', 'https://tu-endpoint-minio/jobwalpy-media/portfolios/uuid/x.pdf', '2026-09-02');
 
--- -----------------------------------------------------------------------------
--- 5. ELIMINACIÓN Y MANTENIMIENTO (DELETE)
--- -----------------------------------------------------------------------------
+-- Ver el portafolio de un candidato
+SELECT * FROM portafolios WHERE usuario_id = 'uuid-del-candidato' ORDER BY creado_at DESC;
 
--- Eliminar una vacante (por cascada elimina postulaciones y chats asociados)
-DELETE FROM jobs
-WHERE id = '111e4567-e89b-12d3-a456-426614174000';
+-- Eliminar un elemento del portafolio (solo si es realmente del dueño)
+DELETE FROM portafolios WHERE id = 'uuid-del-item' AND usuario_id = 'uuid-del-candidato';
+
+-- ------------------------------------------------------------
+-- ELIMINACIÓN Y MANTENIMIENTO
+-- ------------------------------------------------------------
+
+-- Eliminar un empleo (por cascada elimina también sus aplicaciones)
+DELETE FROM empleos WHERE id = 'uuid-del-empleo';
+
+-- "Eliminar" un usuario (en este proyecto NUNCA es un DELETE real —
+-- siempre es borrado suave, para no perder el historial de empleos/chats/aplicaciones)
+UPDATE usuarios SET activo = FALSE WHERE id = 'uuid-del-usuario';
