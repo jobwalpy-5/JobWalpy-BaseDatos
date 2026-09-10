@@ -32,7 +32,6 @@
         <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:24px;">
           <span class="tag">📍 {{ job.location }}</span>
           <span class="tag">🕐 {{ job.type }}</span>
-          <span class="tag">💰 ${{ "{:,}".format(job.salary_min) }} – ${{ "{:,}".format(job.salary_max) }} COP</span>
           <span class="tag tag-soft">{{ job.category }}</span>
           <span class="tag">📅 {{ job.posted_at }}</span>
           <span class="tag">👥 {{ applicant_count }} aplicante{{ 's' if applicant_count != 1 else '' }}</span>
