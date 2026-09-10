@@ -90,16 +90,6 @@
           <option value="Prácticas" {% if selected_type == "Prácticas" %}selected{% endif %}>Prácticas</option>
         </select>
       </div>
-      <div class="filter-block">
-        <h4 class="filter-title">Salario mínimo</h4>
-        <select name="salary">
-          <option value="">Sin filtro</option>
-          <option value="1000000" {% if selected_salary == "1000000" %}selected{% endif %}>$1.000.000+</option>
-          <option value="2000000" {% if selected_salary == "2000000" %}selected{% endif %}>$2.000.000+</option>
-          <option value="3000000" {% if selected_salary == "3000000" %}selected{% endif %}>$3.000.000+</option>
-          <option value="5000000" {% if selected_salary == "5000000" %}selected{% endif %}>$5.000.000+</option>
-        </select>
-      </div>
       <div class="filter-divider"></div>
       <div class="filters-buttons">
         <button type="submit" class="apply-btn">Aplicar filtros</button>
@@ -169,7 +159,7 @@
         <p class="job-company">{{ job.company }}</p>
         <div class="job-meta">
           <span class="job-meta-item">📍 {{ job.location }}</span>
-          <span class="job-meta-item">💰 ${{ "{:,}".format(job.salary_min) }} – ${{ "{:,}".format(job.salary_max) }}</span>
+          
         </div>
         <div class="job-footer">
           <span class="tag tag-soft">{{ job.category }}</span>
