@@ -1,13 +1,11 @@
 // ── JOBS PAGE ─────────────────────────────────────────────────────────────────
 
-// Auto-submit filter form on select change (already covered in main.js,
-// but we add salary input debounce here for the jobs page specifically)
+// Auto-submit filter form on select change
 (function () {
-  const salarySelect = document.querySelector('select[name="salary"]');
   const categorySelect = document.querySelector('select[name="category"]');
   const typeSelect = document.querySelector('select[name="type"]');
 
-  [salarySelect, categorySelect, typeSelect].forEach((el) => {
+  [categorySelect, typeSelect].forEach((el) => {
     if (el) {
       el.addEventListener("change", () => {
         el.closest("form")?.submit();
@@ -17,7 +15,7 @@
 
   // Highlight active filters
   const urlParams = new URLSearchParams(window.location.search);
-  const activeFilters = ["search", "category", "type", "salary"].filter(
+  const activeFilters = ["search", "category", "type"].filter(
     (k) => urlParams.get(k)
   );
   if (activeFilters.length > 0) {
