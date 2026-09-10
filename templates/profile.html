@@ -122,21 +122,10 @@
         <button type="submit" class="btn btn-primary btn-sm">Subir foto</button>
       </form>
     </div>
+    
 
-    <div class="profile-section">
-      <h3>Video de presentación</h3>
-      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">MP4, MOV o WEBM — máximo 100 MB, idealmente 2 minutos o menos.</p>
-      {% if user.presentation_video_url %}
-      <video controls style="width:100%;max-width:480px;border-radius:var(--radius-sm);margin-bottom:14px;display:block;">
-        <source src="{{ user.presentation_video_url }}">
-      </video>
-      {% endif %}
-      <form action="/profile/video" method="post" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <input type="file" name="video" accept=".mp4,.mov,.webm" required
-          style="flex:1;min-width:200px;padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);">
-        <button type="submit" class="btn btn-primary btn-sm">{{ 'Reemplazar video' if user.presentation_video_url else 'Subir video' }}</button>
-      </form>
-    </div>
+  <!--aqui se elimino la parte del video de presentacion-->
+    
 
     <div class="profile-section">
       <h3>Portafolio <span class="count-badge">{{ portfolio_items | length }}</span></h3>
