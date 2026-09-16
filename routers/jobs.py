@@ -14,8 +14,7 @@ async def jobs_page(
     request: Request, 
     search: str = "", 
     category: str = "",
-    type: str = "", 
-    salary: str = ""
+    type: str = "" 
 ): # 👈 CORREGIDO: Eliminado user_id de los parámetros
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN: Lectura segura desde el request
     
@@ -26,8 +25,6 @@ async def jobs_page(
         jobs = [j for j in jobs if j["category"] == category]
     if type:
         jobs = [j for j in jobs if j["type"] == type]
-    if salary:
-        jobs = [j for j in jobs if j["salary_min"] >= int(salary)]
         
     categories = list(set(j["category"] for j in db.get_jobs()))
     ctx = chat_context(user_id)
@@ -36,7 +33,7 @@ async def jobs_page(
         **ctx,
         "jobs": jobs, "categories": categories,
         "search": search, "selected_category": category,
-        "selected_type": type, "selected_salary": salary,
+        "selected_type": type,
         "total": len(jobs)
     })
  
@@ -74,8 +71,7 @@ async def post_job_page(request: Request): # 👈 CORREGIDO
 async def post_job(
     request: Request,
     title: str = Form(...), company: str = Form(...),
-    location: str = Form(...), salary_min: int = Form(...),
-    salary_max: int = Form(...), type: str = Form(...),
+    location: str = Form(...), type: str = Form(...),
     category: str = Form(...), description: str = Form(...),
     requirements: str = Form(...), benefits: str = Form(...)
 ): # 👈 CORREGIDO
@@ -87,7 +83,6 @@ async def post_job(
         
     job = {
         "title": title, "company": company, "location": location,
-        "salary_min": salary_min, "salary_max": salary_max,
         "type": type, "category": category, "description": description,
         "requirements": [r.strip() for r in requirements.split(",")],
         "benefits": [b.strip() for b in benefits.split(",")],
