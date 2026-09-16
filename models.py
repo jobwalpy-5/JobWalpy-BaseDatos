@@ -147,8 +147,6 @@ class JobBase(BaseModel):
     title: str
     company: str
     location: str
-    salary_min: int
-    salary_max: int
     type: str
     category: str
     description: str
@@ -165,13 +163,6 @@ class JobOut(JobBase):
     posted_by: str
     posted_at: str
     active: bool = True
-
-    @field_validator("salary_min", "salary_max", mode="before")
-    @classmethod
-    def salary_must_be_positive(cls, v):
-        if v < 0:
-            raise ValueError("El salario no puede ser negativo")
-        return v
 
 
 # ── APPLICATION MODELS ────────────────────────────────────────────────────────
