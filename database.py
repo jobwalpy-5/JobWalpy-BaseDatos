@@ -723,3 +723,51 @@ def delete_portfolio_item(item_id: str, user_id: str) -> bool:
             "DELETE FROM portafolios WHERE id = %s AND usuario_id = %s", (item_id, str(user_id))
         )
         return cur.rowcount > 0
+
+
+"ordenes para que deje funcionar correctamente usuarios demo"
+def _row_to_dict(conn, row: dict) -> dict:
+    base = {
+        "id": row["id"],
+        "email": row["email"],
+        "role": row["rol"],
+        "verified": bool(row["verificado"]),
+        "active": bool(row["activo"]),
+        "created_at": row["fecha_registro"],
+    }
+    if row["rol"] == "buscador":
+        p = conn.execute(
+            "SELECT * FROM perfiles_buscador WHERE usuario_id = %s", (row["id"],)
+        ).fetchone()
+        if not p:
+            # Perfil por defecto si no existe en la BD
+            base.update({"name": "Sin nombre", "phone": "", "location": "", "bio": "", "skills": [], "experience": "", "education": "", "cv_url": "", "avatar": "??", "avatar_color": "#6366f1", "profile_photo_url": "", "presentation_video_url": "", "media_status": "", "verified_company": False})
+            return base
+        base.update({
+            "name": p["nombre"], "phone": p["telefono"], "location": p["ubicacion"],
+            "bio": p["bio"], "skills": json.loads(p["skills"] or "[]"),
+            "experience": p["experiencia"], "education": p["educacion"],
+            "cv_url": p["cv_url"], "avatar": p["avatar"], "avatar_color": p["avatar_color"],
+            "profile_photo_url": p["profile_photo_url"],
+            "presentation_video_url": p["presentation_video_url"],
+            "media_status": p["media_status"],
+            "verified_company": False,
+        })
+    else:
+        p = conn.execute(
+            "SELECT * FROM perfiles_empleador WHERE usuario_id = %s", (row["id"],)
+        ).fetchone()
+        if not p:
+            # Perfil por defecto si no existe en la BD
+            base.update({"name": "Sin empresa", "contact_name": "", "phone": "", "company_name": "Sin empresa", "legal_name": "", "tax_id": "", "website": "", "address": "", "industry": "", "size": "", "location": "", "bio": "", "document": "", "avatar": "??", "avatar_color": "#6366f1", "verified_company": False})
+            return base
+        base.update({
+            "name": p["company_name"], "contact_name": p["contact_name"], "phone": p["telefono"],
+            "company_name": p["company_name"], "legal_name": p["legal_name"], "tax_id": p["tax_id"],
+            "website": p["website"], "address": p["address"], "industry": p["industry"],
+            "size": p["size"], "location": p["ubicacion"], "bio": p["bio"],
+            "document": p["documento_path"],
+            "avatar": p["avatar"], "avatar_color": p["avatar_color"],
+            "verified_company": bool(p["verificado_legal"]),
+        })
+    return base
