@@ -339,8 +339,7 @@ def delete_user(user_id: str) -> bool:
         return cur.rowcount > 0
 
 
-# ── INICIALIZACIÓN AL IMPORTAR EL MÓDULO ──────────────────────────────────────
-init_db()
+#aqui se elimino la funcion que llamaba la tabla de datos interna
 
 
 # ══════════════════════════════════════════════════════════════════════════════
