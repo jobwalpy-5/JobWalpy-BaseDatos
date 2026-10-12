@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Request, Form, Cookie
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-import database as db
+from dominio import servicios as db
+from presentacion.plantillas import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 # ── VER APLICACIONES RECIBIDAS (empleador) ────────────────────────────────────

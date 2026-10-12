@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
-import database as db
+from dominio import servicios as db
+from presentacion.plantillas import templates
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
 
 def _enrich_conversations(user_id: str) -> list:

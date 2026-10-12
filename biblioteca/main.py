@@ -1,23 +1,28 @@
+import sys
+from pathlib import Path
+
+# Permite "from nucleo...", "from dominio..." sin importar desde dónde se arranque.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
 from fastapi import FastAPI, Request, Cookie
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from dotenv import load_dotenv
 
 load_dotenv()  # En local, lee DATABASE_URL desde .env. En Vercel, no hace nada
                 # (la variable ya viene configurada desde su dashboard) y no falla.
 
-from routers.jobs import router as jobs_router
-from routers.users import router as users_router
-from routers.applications import router as applications_router
-from routers.chat import router as chat_router
-from routers.media import router as media_router
+from presentacion.rutas.jobs import router as jobs_router
+from presentacion.rutas.users import router as users_router
+from presentacion.rutas.applications import router as applications_router
+from presentacion.rutas.chat import router as chat_router
+from presentacion.rutas.media import router as media_router
 
-import database as db
+from dominio import servicios as db
+from presentacion.plantillas import templates, DIR_STATIC
 
 app = FastAPI(title="JobWalpy", description="Plataforma de empleo")
-app.mount("/static", StaticFiles(directory="static"), name="static")
-templates = Jinja2Templates(directory="templates")
+app.mount("/static", StaticFiles(directory=str(DIR_STATIC)), name="static")
 
 app.include_router(jobs_router)
 app.include_router(users_router)

@@ -1,19 +1,15 @@
 from fastapi import APIRouter, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
-from fastapi.templating import Jinja2Templates
 from pydantic import ValidationError
 from typing import Optional
-from pathlib import Path
 import re
 
-import database as db
-from models import BuscadorCreate, EmpleadorCreate, BLOCKED_DOMAINS, validar_password_fuerte
-from routers.context_helper import chat_context
+from dominio import servicios as db
+from presentacion.plantillas import templates, DIR_STATIC
+from dominio.esquemas import BuscadorCreate, EmpleadorCreate, BLOCKED_DOMAINS, validar_password_fuerte
+from presentacion.rutas.context_helper import chat_context
 
 router = APIRouter()
-templates = Jinja2Templates(directory="templates")
-
-BASE_DIR = Path(__file__).resolve().parent.parent
 
 PASSWORD_RE = re.compile(r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_.,?":{}|<>]).{8,}$')
 
@@ -149,7 +145,7 @@ async def register_employer(
     doc_relpath = ""
     if document and document.filename:
         safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", document.filename)
-        upload_dir = BASE_DIR / "static" / "uploads" / "docs"
+        upload_dir = DIR_STATIC / "uploads" / "docs"
         upload_dir.mkdir(parents=True, exist_ok=True)
         clean_tax_id = re.sub(r"[^a-zA-Z0-9]", "", tax_id)
         stored_name = f"{clean_tax_id}_{safe_name}"
