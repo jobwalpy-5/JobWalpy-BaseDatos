@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import RedirectResponse
 
-import database as db
-import storage
+from dominio import servicios as db
+from nucleo import almacenamiento as storage
 
 router = APIRouter()
 

@@ -1,6 +1,6 @@
-# routers/context_helper.py
+# presentacion/rutas/context_helper.py
 # Función compartida para inyectar chattable_users en cualquier template
-import database as db
+from dominio import servicios as db
 
 def chat_context(user_id: str) -> dict:
     """Retorna user y chattable_users para pasar al template.
