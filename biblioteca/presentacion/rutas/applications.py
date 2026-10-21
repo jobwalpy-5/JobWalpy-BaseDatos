@@ -10,6 +10,7 @@ router = APIRouter()
 # NOTA: esta ruta no existía en la versión anterior — sin ella, applications.html
 # era inalcanzable (nada apuntaba a /applications). La agrego para que el botón
 # "Ver candidatos" / flujo del empleador funcione de verdad.
+
 @router.get("/applications", response_class=HTMLResponse)
 async def applications_page(request: Request):
     user_id = request.cookies.get("user_id")
