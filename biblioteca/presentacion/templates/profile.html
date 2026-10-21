@@ -126,47 +126,8 @@
 
   <!--aqui se elimino la parte del video de presentacion-->
     
-
-    <div class="profile-section">
-      <h3>Portafolio <span class="count-badge">{{ portfolio_items | length }}</span></h3>
-      {% if portfolio_items %}
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
-        {% for item in portfolio_items %}
-        <div class="application-row">
-          <div class="app-job-info">
-            <strong>{{ item.title }}</strong>
-            {% if item.description %}<span>{{ item.description }}</span>{% endif %}
-          </div>
-          <a href="{{ item.file_url }}" target="_blank" rel="noopener" class="btn btn-outline btn-sm">Ver archivo</a>
-          <form action="/profile/portfolio/{{ item.id }}/delete" method="post" style="display:inline;">
-            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('¿Eliminar este elemento del portafolio?')">Eliminar</button>
-          </form>
-        </div>
-        {% endfor %}
-      </div>
-      {% endif %}
-      <p style="color:var(--text-muted);font-size:13px;margin-bottom:12px;">PDF, JPG o PNG — máximo 20 MB por archivo.</p>
-      <form action="/profile/portfolio" method="post" enctype="multipart/form-data">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Título *</label>
-            <input type="text" name="title" required placeholder="Ej: Proyecto Backend" />
-          </div>
-          <div class="form-group">
-            <label>Descripción</label>
-            <input type="text" name="description" placeholder="Ej: API desarrollada en FastAPI" />
-          </div>
-        </div>
-        <div class="form-group">
-          <label>Archivo *</label>
-          <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required
-            style="padding:8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);width:100%;box-sizing:border-box;">
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn btn-primary btn-sm">Agregar al portafolio</button>
-        </div>
-      </form>
-    </div>
+<!-- aqui se eliminó la parte del portafolio-->
+    
     {% endif %}
 
     <!-- POSTED JOBS (empleador) -->
