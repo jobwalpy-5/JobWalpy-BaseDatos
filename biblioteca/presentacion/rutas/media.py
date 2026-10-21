@@ -24,25 +24,19 @@ def _require_buscador(request: Request):
     return user
 
 
-# ── FOTO DE PERFIL ────────────────────────────────────────────────────────────
+# ── FOTO DE PERFIL (por enlace) ──────────────────────────────
 @router.post("/profile/photo")
-async def upload_profile_photo(request: Request, photo: UploadFile = File(...)):
+async def set_profile_photo(request: Request, photo_url: str = Form(...)):
     user = _require_buscador(request)
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    content = await photo.read()
-    try:
-        url = storage.upload_profile_photo(user["id"], photo.filename, content)
-    except storage.ArchivoInvalidoError as e:
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
-    except RuntimeError as e:
-        # MinIO no está configurado — error claro en vez de un 500 genérico.
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
+    photo_url = photo_url.strip()
+    if not photo_url.lower().startswith(("http://", "https://")) or len(photo_url) > 500:
+        return RedirectResponse("/profile?error=enlace_invalido", status_code=302)
 
-    db.update_user(user["id"], {"profile_photo_url": url})
+    db.update_user(user["id"], {"profile_photo_url": photo_url})
     return RedirectResponse("/profile?success=foto_actualizada", status_code=302)
-
 
 # ── VIDEO DE PRESENTACIÓN ──────────────────────────────────────────────────────
 @router.post("/profile/video")
