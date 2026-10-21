@@ -256,7 +256,7 @@ def desactivar_usuario(user_id: str) -> bool:
 def _job_row_to_dict(row: dict) -> dict:
     return {
         "id": row["id"], "title": row["titulo"], "company": row["empresa"],
-        "location": row["ubicacion"], "salary_min": row["salario_min"], "salary_max": row["salario_max"],
+        "location": row["ubicacion"],
         "type": row["tipo"], "category": row["categoria"], "description": row["descripcion"],
         "requirements": json.loads(row["requisitos"] or "[]"),
         "benefits": json.loads(row["beneficios"] or "[]"),
@@ -280,10 +280,10 @@ def obtener_empleo(job_id: str) -> dict | None:
 def insertar_empleo(job_id: str, job: dict) -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO empleos (id, titulo, empresa, ubicacion, salario_min, salario_max, tipo, "
+            "INSERT INTO empleos (id, titulo, empresa, ubicacion, tipo, "
             "categoria, descripcion, requisitos, beneficios, publicado_por, publicado_at, activo) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (job_id, job["title"], job["company"], job["location"], job["salary_min"], job["salary_max"],
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (job_id, job["title"], job["company"], job["location"],
              job["type"], job["category"], job["description"], json.dumps(job.get("requirements", [])),
              json.dumps(job.get("benefits", [])), job["posted_by"], job["posted_at"],
              job.get("active", True)),
