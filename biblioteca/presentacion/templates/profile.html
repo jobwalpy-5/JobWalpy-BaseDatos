@@ -19,19 +19,21 @@
   <!-- SIDEBAR -->
   <aside class="profile-sidebar">
     <div class="profile-card">
-           {% if user.role == "buscador" %}
-      <form action="/profile/photo" method="post" enctype="multipart/form-data">
-        <div class="avatar-wrap">
-          {% if user.profile_photo_url %}
-          <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};padding:0;overflow:hidden;">
-            <img src="{{ user.profile_photo_url }}" alt="{{ user.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
-          </div>
-          {% else %}
-          <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};">{{ user.avatar }}</div>
-          {% endif %}
-          <label for="photo-input" class="avatar-edit" title="Cambiar foto de perfil">✏️</label>
-          <input type="file" id="photo-input" name="photo" accept=".jpg,.jpeg,.png,.webp" hidden onchange="this.form.submit()">
+                {% if user.role == "buscador" %}
+      <div class="avatar-wrap">
+        {% if user.profile_photo_url %}
+        <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};padding:0;overflow:hidden;">
+          <img src="{{ user.profile_photo_url }}" alt="{{ user.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
         </div>
+        {% else %}
+        <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};">{{ user.avatar }}</div>
+        {% endif %}
+        <button type="button" class="avatar-edit" style="padding:0;" title="Cambiar foto de perfil"
+          onclick="var b=document.getElementById('photo-link-box');b.style.display=(b.style.display==='block'?'none':'block');">✏️</button>
+      </div>
+      <form id="photo-link-box" action="/profile/photo" method="post" style="display:none;margin-top:12px;">
+        <input type="url" name="photo_url" placeholder="Pega el enlace de tu foto (https://...)" required style="width:100%;margin-bottom:8px;">
+        <button type="submit" class="btn btn-primary btn-sm">Guardar foto</button>
       </form>
       {% else %}
       <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};">{{ user.avatar }}</div>
