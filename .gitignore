@@ -7,3 +7,4 @@ data/*.json
 jobwalpy.db
 .env
 static/uploads/
+.env
