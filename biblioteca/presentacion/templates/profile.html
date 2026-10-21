@@ -2,6 +2,13 @@
 {% block title %}Mi perfil — JobWalpy{% endblock %}
 
 {% block content %}
+<style>
+.avatar-wrap{position:relative;width:fit-content;margin:0 auto;}
+.avatar-edit{position:absolute;right:0;bottom:0;width:34px;height:34px;
+  border-radius:50%;background:#6366f1;color:#fff;border:3px solid var(--bg,#fff);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:14px;}
+.avatar-edit:hover{filter:brightness(1.1);}
+</style>
 
 {% if request.query_params.get('updated') %}
 <div class="alert alert-success">✓ Perfil actualizado correctamente</div>
@@ -12,10 +19,20 @@
   <!-- SIDEBAR -->
   <aside class="profile-sidebar">
     <div class="profile-card">
-      {% if user.role == "buscador" and user.profile_photo_url %}
-      <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};padding:0;overflow:hidden;">
-        <img src="{{ user.profile_photo_url }}" alt="{{ user.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
-      </div>
+           {% if user.role == "buscador" %}
+      <form action="/profile/photo" method="post" enctype="multipart/form-data">
+        <div class="avatar-wrap">
+          {% if user.profile_photo_url %}
+          <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};padding:0;overflow:hidden;">
+            <img src="{{ user.profile_photo_url }}" alt="{{ user.name }}" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">
+          </div>
+          {% else %}
+          <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};">{{ user.avatar }}</div>
+          {% endif %}
+          <label for="photo-input" class="avatar-edit" title="Cambiar foto de perfil">✏️</label>
+          <input type="file" id="photo-input" name="photo" accept=".jpg,.jpeg,.png,.webp" hidden onchange="this.form.submit()">
+        </div>
+      </form>
       {% else %}
       <div class="profile-avatar" style="background:{{ user.avatar_color if user.avatar_color else '#6366f1' }};">{{ user.avatar }}</div>
       {% endif %}
