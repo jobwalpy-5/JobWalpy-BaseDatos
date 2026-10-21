@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel de administración</title>
+  <style>
+    body { font-family: sans-serif; max-width: 1000px; margin: 30px auto; padding: 0 16px; }
+    .cards { display: flex; gap: 12px; margin-bottom: 24px; }
+    .card { flex: 1; border: 1px solid #ddd; border-radius: 8px; padding: 14px; text-align: center; }
+    .card b { font-size: 28px; display: block; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px; text-align: left; font-size: 14px; }
+    .ok { color: #15803d; font-weight: 600; }
+    .no { color: #b45309; font-weight: 600; }
+    button { padding: 5px 10px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <h1>Panel de administración</h1>
+  <p><a href="/">← Volver al inicio</a></p>
+
+  <div class="cards">
+    <div class="card"><b>{{ resumen.buscadores }}</b>Buscadores</div>
+    <div class="card"><b>{{ resumen.empleadores }}</b>Empleadores</div>
+    <div class="card"><b>{{ resumen.empleos }}</b>Empleos</div>
+  </div>
+
+  <h2>Empleadores</h2>
+  <table>
+    <tr><th>Empresa</th><th>Correo</th><th>NIT</th><th>Documento</th><th>Estado</th><th>Acciones</th></tr>
+    {% for e in empleadores %}
+    <tr>
+      <td>{{ e.company_name }}</td>
+      <td>{{ e.email }}</td>
+      <td>{{ e.tax_id }}</td>
+      <td>{{ e.documento_path or "—" }}</td>
+      <td>
+        {% if e.verificado_legal %}<span class="ok">✔️ Verificado</span>{% else %}<span class="no">Pendiente</span>{% endif %}
+        {% if not e.activo %}<br><span class="no">Suspendido</span>{% endif %}
+      </td>
+      <td>
+        <form method="post" action="/admin/empleadores/{{ e.id }}/verificar" style="display:inline">
+          <input type="hidden" name="valor" value="{{ '0' if e.verificado_legal else '1' }}">
+          <button>{{ 'Quitar verificación' if e.verificado_legal else 'Aprobar' }}</button>
+        </form>
+        <form method="post" action="/admin/usuarios/{{ e.id }}/activo" style="display:inline">
+          <input type="hidden" name="valor" value="{{ '0' if e.activo else '1' }}">
+          <button>{{ 'Suspender' if e.activo else 'Reactivar' }}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

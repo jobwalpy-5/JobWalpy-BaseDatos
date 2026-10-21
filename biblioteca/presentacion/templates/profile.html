@@ -87,7 +87,7 @@
     <!-- APPLICATIONS (buscador) -->
     {% if user.role == "buscador" %}
     <div class="profile-section">
-      <h3>Mis aplicaciones <span class="count-badge">{{ applications | length }}</span></h3>
+      <h3>Postulaciones <span class="count-badge">{{ applications | length }}</span></h3>
       {% if applications %}
         {% for app in applications %}
         <div class="application-row">
@@ -105,8 +105,8 @@
       {% else %}
         <div class="empty-state small">
           <span class="empty-icon">📋</span>
-          <h3>Sin aplicaciones</h3>
-          <p>Aún no has aplicado a ningún empleo.</p>
+          <h3>Sin Postulaciones</h3>
+          <p>Aún no te has postulado a ningún empleo.</p>
           <a href="/jobs" class="btn btn-primary mt-sm">Explorar empleos</a>
         </div>
       {% endif %}

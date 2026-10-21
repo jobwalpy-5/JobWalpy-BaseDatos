@@ -19,6 +19,9 @@ from presentacion.rutas.media import router as media_router
 from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
 
+from presentacion.rutas import admin
+
+
 app = FastAPI(title="JobWalpy", description="Plataforma de empleo")
 app.mount("/static", StaticFiles(directory=str(DIR_STATIC)), name="static")
 
@@ -27,7 +30,7 @@ app.include_router(users_router)
 app.include_router(applications_router)
 app.include_router(chat_router)
 app.include_router(media_router)
-
+app.include_router(admin.router)
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user_id: str = Cookie(default=None)):
@@ -73,3 +76,4 @@ async def home(request: Request, user_id: str = Cookie(default=None)):
         "categories":          categories,
         "stats":               stats,
     })
+

@@ -40,6 +40,12 @@ def _fila_a_usuario(conn, row: dict) -> dict:
         "active": bool(row["activo"]),
         "created_at": row["fecha_registro"],
     }
+
+    if row["rol"] == "admin":
+        base.update({"name": "Administrador", "phone": "", "location": "", "bio": "",
+                     "avatar": "AD", "avatar_color": "#4f46e5", "verified_company": False})
+        return base
+    
     if row["rol"] == "buscador":
         p = conn.execute(
             "SELECT * FROM perfiles_buscador WHERE usuario_id = %s", (row["id"],)
@@ -475,3 +481,36 @@ def es_participante(conv_id: str, user_id: str) -> bool:
             (conv_id, str(user_id), str(user_id)),
         ).fetchone()
     return row is not None
+
+
+# ── ADMIN ─────────────────────────────────────────────────────────────────────
+def contar_resumen() -> dict:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT (SELECT COUNT(*) FROM usuarios WHERE rol='buscador') AS buscadores, "
+            "(SELECT COUNT(*) FROM usuarios WHERE rol='empleador') AS empleadores, "
+            "(SELECT COUNT(*) FROM empleos) AS empleos"
+        ).fetchone()
+
+
+def listar_empleadores_admin() -> list:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT u.id, u.email, u.activo, p.company_name, p.legal_name, p.tax_id, "
+            "p.documento_path, p.verificado_legal "
+            "FROM usuarios u JOIN perfiles_empleador p ON p.usuario_id = u.id "
+            "ORDER BY p.verificado_legal, u.fecha_registro DESC"
+        ).fetchall()
+
+
+def set_verificado_empleador(user_id: str, valor: bool) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE perfiles_empleador SET verificado_legal = %s WHERE usuario_id = %s",
+            (valor, user_id),
+        )
+
+
+def set_activo_usuario(user_id: str, activo: bool) -> None:
+    with get_conn() as conn:
+        conn.execute("UPDATE usuarios SET activo = %s WHERE id = %s", (activo, user_id))

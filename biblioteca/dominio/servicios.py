@@ -352,3 +352,23 @@ def sembrar_cuentas_demo() -> dict:
     for c in datos_demo.BUSCADORES:
         _sembrar_cuenta(c, "buscador", resultado)
     return resultado
+
+# ── ADMIN ─────────────────────────────────────────────────────────────────────
+def es_admin(user) -> bool:
+    return bool(user) and user.get("role") == "admin"
+
+
+def admin_resumen() -> dict:
+    return repo.contar_resumen()
+
+
+def admin_listar_empleadores() -> list:
+    return repo.listar_empleadores_admin()
+
+
+def admin_verificar_empleador(user_id: str, valor: bool) -> None:
+    repo.set_verificado_empleador(user_id, valor)
+
+
+def admin_cambiar_activo(user_id: str, activo: bool) -> None:
+    repo.set_activo_usuario(user_id, activo)
