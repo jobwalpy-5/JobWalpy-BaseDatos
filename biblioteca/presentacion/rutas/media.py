@@ -61,33 +61,4 @@ async def upload_video_presentation(request: Request, video: UploadFile = File(.
     return RedirectResponse("/profile?success=video_actualizado", status_code=302)
 
 
-# ── PORTAFOLIO ─────────────────────────────────────────────────────────────────
-@router.post("/profile/portfolio")
-async def upload_portfolio_item(
-    request: Request,
-    title: str = Form(...),
-    description: str = Form(default=""),
-    file: UploadFile = File(...),
-):
-    user = _require_buscador(request)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-
-    content = await file.read()
-    try:
-        url = storage.upload_portfolio_file(user["id"], file.filename, content)
-    except (storage.ArchivoInvalidoError, RuntimeError) as e:
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
-
-    db.create_portfolio_item(user["id"], title, description, url)
-    return RedirectResponse("/profile?success=portafolio_actualizado", status_code=302)
-
-
-@router.post("/profile/portfolio/{item_id}/delete")
-async def delete_portfolio_item(request: Request, item_id: str):
-    user = _require_buscador(request)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-
-    db.delete_portfolio_item(item_id, user["id"])
-    return RedirectResponse("/profile?success=item_eliminado", status_code=302)
+# aqui se eliminó la parte del portafolio
