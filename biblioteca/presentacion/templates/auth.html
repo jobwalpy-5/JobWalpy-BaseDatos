@@ -13,8 +13,7 @@
 
   <a href="/" class="floating-logo">
 
-    <img class="logo-box" src="img/logo.png" alt="Logo de mi proyecto">
-
+    <img class="logo-box" src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo de mi proyecto">
     <span class="logo-text">JobWalpy</span>
   </a>
 
@@ -30,7 +29,7 @@
       <form class="sign-in" action="/login" method="post">
         <input type="hidden" name="next" value="{{ next or '/' }}" />
 
-        
+
         <h1>Iniciar Sesión</h1>
         <div class="social-networks">
 
