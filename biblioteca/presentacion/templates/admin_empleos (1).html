@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Empleos — Admin JobWalpy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="stylesheet" href="/static/css/admin.css"/>
+</head>
+<body style="display:flex;min-height:100vh;background:var(--bg-page);">
+{% include "admin_sidebar.html" %}
+<main style="flex:1;overflow-y:auto;">
+  <div class="admin-topbar">
+    <div>
+      <h1 class="admin-page-title">Gestión de Empleos</h1>
+      <p class="admin-page-sub">{{ empleos|length }} empleo(s) encontrado(s)</p>
+    </div>
+  </div>
+  <div class="admin-content">
+    {% if request.query_params.get("msg") %}
+    <div class="alert alert-success" style="margin-bottom:20px;">✓ {{ request.query_params.get("msg")|replace("_"," ") }}</div>
+    {% endif %}
+    <form method="get" action="/admin/empleos" class="admin-filter-bar">
+      <input type="text" name="search" value="{{ search }}" placeholder="Buscar por título o empresa…" class="admin-filter-input"/>
+      <button type="submit" class="btn btn-primary btn-sm">Buscar</button>
+      <a href="/admin/empleos" class="btn btn-outline btn-sm">Limpiar</a>
+    </form>
+    <div class="admin-table-card">
+      <table class="admin-table">
+        <thead><tr><th>Título</th><th>Empresa</th><th>Ubicación</th><th>Estado</th><th>Publicado</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for j in empleos %}
+          <tr>
+            <td style="font-weight:600;color:var(--primary);">{{ j.titulo[:38] }}{% if j.titulo|length > 38 %}…{% endif %}</td>
+            <td style="color:var(--text-muted);font-size:13px;">{{ j.empresa }}</td>
+            <td style="color:var(--text-muted);font-size:13px;">{{ j.ubicacion }}</td>
+            <td><span class="tag" style="background:{% if j.activo %}rgba(16,185,129,0.1){% else %}rgba(239,68,68,0.1){% endif %};color:{% if j.activo %}#065f46{% else %}#b91c1c{% endif %};">{% if j.activo %}Activo{% else %}Inactivo{% endif %}</span></td>
+            <td style="color:var(--text-muted);font-size:13px;">{{ j.publicado_at[:10] if j.publicado_at else '—' }}</td>
+            <td>
+              <div style="display:flex;gap:6px;">
+                {% if admin.nivel != 'soporte' %}
+                <form method="post" action="/admin/empleos/{{ j.id }}/desactivar"><button class="admin-btn admin-btn-yellow">{% if j.activo %}⏸ Desactivar{% else %}▶ Activar{% endif %}</button></form>
+                {% endif %}
+                {% if admin.nivel == 'super_admin' %}
+                <form method="post" action="/admin/empleos/{{ j.id }}/eliminar" onsubmit="return confirm('¿Eliminar este empleo permanentemente?')"><button class="admin-btn admin-btn-red">🗑 Eliminar</button></form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No hay empleos con estos filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+</body>
+</html>

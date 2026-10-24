@@ -8,6 +8,7 @@ from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
 from dominio.esquemas import BuscadorCreate, EmpleadorCreate, BLOCKED_DOMAINS, validar_password_fuerte
 from presentacion.rutas.context_helper import chat_context
+from presentacion.rutas.admin import iniciar_sesion_admin
 
 router = APIRouter()
 
@@ -24,9 +25,24 @@ async def login_page(request: Request, next: str = "/"):
         return RedirectResponse("/")
     return templates.TemplateResponse(request=request, name="login.html", context={"next": next})
 
+   
+
+   
 
 @router.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form(default="/")):
+
+
+      # 1) ¿Es un administrador? (tabla aparte; se revisa primero)
+    admin = db.verify_admin_login(email, password)
+    if admin:
+        response = RedirectResponse("/admin/dashboard", status_code=302)
+        iniciar_sesion_admin(response, admin["id"])
+        return response
+
+    # 2) Si no, es un usuario normal.
+
+    
     # db.verify_login hashea internamente y compara de forma segura; nunca compara texto plano.
     user = db.verify_login(email, password)
     if not user:

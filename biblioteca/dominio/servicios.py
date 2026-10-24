@@ -372,3 +372,114 @@ def admin_verificar_empleador(user_id: str, valor: bool) -> None:
 
 def admin_cambiar_activo(user_id: str, activo: bool) -> None:
     repo.set_activo_usuario(user_id, activo)
+
+    
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADMINISTRADORES — aquí están las DECISIONES; el SQL vive en repositorios.py
+# ══════════════════════════════════════════════════════════════════════════════
+NIVELES_ADMIN = ("super_admin", "moderador", "soporte")
+
+
+def verify_admin_login(correo: str, password: str) -> dict | None:
+    """
+    Devuelve el admin (sin su hash) si el correo y la clave son correctos y la
+    cuenta está activa; si no, None. Usa el MISMO hash seguro que los usuarios
+    (nucleo.seguridad), no SHA-256 simple.
+    """
+    admin = repo.buscar_admin_por_correo(correo.lower().strip())
+    # Se verifica SIEMPRE contra algún hash (aunque el correo no exista) para
+    # que tardar lo mismo no delate qué correos son de administradores.
+    guardado = admin["password_hash"] if admin else "x$x"
+    clave_ok = verify_password(password, guardado)
+    if not admin or not clave_ok or not admin["activo"]:
+        return None
+    repo.registrar_acceso_admin(admin["id"], datetime.utcnow().isoformat(timespec="seconds"))
+    return {k: v for k, v in admin.items() if k != "password_hash"}
+
+
+def get_admin(admin_id: str) -> dict | None:
+    return repo.buscar_admin_por_id(admin_id)
+
+
+def crear_admin(nombre: str, correo: str, password: str, nivel: str = "moderador") -> str:
+    """Crea una cuenta de administrador. Lanza ValueError con un mensaje claro si algo no cumple."""
+    correo = correo.lower().strip()
+    if nivel not in NIVELES_ADMIN:
+        raise ValueError(f"El nivel debe ser uno de: {', '.join(NIVELES_ADMIN)}.")
+    if "@" not in correo:
+        raise ValueError("El correo no parece válido.")
+    if repo.existe_usuario_con_correo(correo):
+        raise ValueError("Ese correo ya lo usa una cuenta normal. Usa otro correo para el administrador.")
+    if repo.buscar_admin_por_correo(correo):
+        raise ValueError("Ya existe un administrador con ese correo.")
+    if len(password) < 10:
+        raise ValueError("La contraseña del administrador debe tener al menos 10 caracteres.")
+    admin_id = new_id()
+    repo.insertar_admin(admin_id, nombre.strip(), correo, hash_password(password),
+                        nivel, datetime.utcnow().isoformat(timespec="seconds"))
+    return admin_id
+
+
+def admin_estadisticas() -> dict:
+    return repo.admin_estadisticas()
+
+
+def admin_usuarios_recientes(limite: int = 5) -> list:
+    return repo.admin_usuarios_recientes(limite)
+
+
+def admin_empleos_recientes(limite: int = 5) -> list:
+    return repo.admin_empleos_recientes(limite)
+
+
+def admin_empleadores_pendientes() -> list:
+    return repo.admin_empleadores_pendientes()
+
+
+def admin_listar_empleadores(estado: str = "") -> list:
+    return repo.admin_listar_empleadores(estado)
+
+
+def admin_listar_usuarios(busqueda: str = "", rol: str = "", verificado: str = "") -> list:
+    return repo.admin_listar_usuarios(busqueda.strip(), rol, verificado)
+
+
+def admin_listar_empleos(busqueda: str = "") -> list:
+    return repo.admin_listar_empleos(busqueda.strip())
+
+
+def admin_marcar_correo_verificado(user_id: str) -> bool:
+    return repo.admin_marcar_correo_verificado(user_id)
+
+
+def admin_alternar_suspension_usuario(user_id: str) -> bool:
+    return repo.admin_alternar_activo_usuario(user_id)
+
+
+def admin_borrar_usuario(user_id: str) -> bool:
+    return repo.admin_borrar_usuario(user_id)
+
+
+def admin_aprobar_empresa(user_id: str) -> bool:
+    """Aprobar = la empresa queda verificada legalmente Y su cuenta activa."""
+    ok = repo.admin_poner_verificado_legal(user_id, True)
+    if ok:
+        repo.admin_poner_activo_usuario(user_id, True)
+    return ok
+
+
+def admin_rechazar_empresa(user_id: str) -> bool:
+    """Rechazar = se quita la verificación y se desactiva la cuenta."""
+    ok = repo.admin_poner_verificado_legal(user_id, False)
+    if ok:
+        repo.admin_poner_activo_usuario(user_id, False)
+    return ok
+
+
+def admin_alternar_empleo(job_id: str) -> bool:
+    return repo.admin_alternar_activo_empleo(job_id)
+
+
+def admin_borrar_empleo(job_id: str) -> bool:
+    return repo.admin_borrar_empleo(job_id)

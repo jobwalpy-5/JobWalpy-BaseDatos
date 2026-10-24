@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Usuarios — Admin JobWalpy</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="stylesheet" href="/static/css/admin.css"/>
+</head>
+<body style="display:flex;min-height:100vh;background:var(--bg-page);">
+{% include "admin_sidebar.html" %}
+<main style="flex:1;overflow-y:auto;">
+  <div class="admin-topbar">
+    <div>
+      <h1 class="admin-page-title">Gestión de Usuarios</h1>
+      <p class="admin-page-sub">{{ usuarios|length }} usuario(s) encontrado(s)</p>
+    </div>
+  </div>
+  <div class="admin-content">
+    {% if request.query_params.get("msg") %}
+    <div class="alert alert-success" style="margin-bottom:20px;">✓ {{ request.query_params.get("msg")|replace("_"," ") }}</div>
+    {% endif %}
+    <form method="get" action="/admin/usuarios" class="admin-filter-bar">
+      <input type="text" name="search" value="{{ search }}" placeholder="Buscar por correo…" class="admin-filter-input"/>
+      <select name="rol" class="admin-filter-select">
+        <option value="">Todos los roles</option>
+        <option value="buscador" {% if rol=='buscador' %}selected{% endif %}>Buscador</option>
+        <option value="empleador" {% if rol=='empleador' %}selected{% endif %}>Empleador</option>
+      </select>
+      <select name="verificado" class="admin-filter-select">
+        <option value="">Correo: todos</option>
+        <option value="si" {% if verificado=='si' %}selected{% endif %}>Correo verificado</option>
+        <option value="no" {% if verificado=='no' %}selected{% endif %}>Correo sin verificar</option>
+      </select>
+      <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+      <a href="/admin/usuarios" class="btn btn-outline btn-sm">Limpiar</a>
+    </form>
+    <div class="admin-table-card">
+      <table class="admin-table">
+        <thead><tr><th>Correo</th><th>Rol</th><th>Correo verificado</th><th>Estado</th><th>Registro</th><th>Acciones</th></tr></thead>
+        <tbody>
+          {% for u in usuarios %}
+          <tr>
+            <td>{{ u.correo }}</td>
+            <td><span class="tag" style="background:{% if u.rol=='empleador' %}rgba(42,149,255,0.1){% else %}rgba(16,185,129,0.1){% endif %};color:{% if u.rol=='empleador' %}#0a4a8a{% else %}#065f46{% endif %};">{{ u.rol }}</span></td>
+            <td><span class="tag" style="background:{% if u.verificado %}rgba(16,185,129,0.1){% else %}rgba(245,158,11,0.1){% endif %};color:{% if u.verificado %}#065f46{% else %}#92400e{% endif %};">{% if u.verificado %}✓ Sí{% else %}No{% endif %}</span></td>
+            <td><span class="tag" style="background:{% if u.activo %}rgba(16,185,129,0.1){% else %}rgba(239,68,68,0.1){% endif %};color:{% if u.activo %}#065f46{% else %}#b91c1c{% endif %};">{% if u.activo %}Activo{% else %}Suspendido{% endif %}</span></td>
+            <td style="color:var(--text-muted);font-size:13px;">{{ u.fecha_registro[:10] if u.fecha_registro else '—' }}</td>
+            <td>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                {% if admin.nivel != 'soporte' %}
+                  {% if not u.verificado %}
+                  <form method="post" action="/admin/usuarios/{{ u.id }}/verificar"><button class="admin-btn admin-btn-green">✓ Marcar correo verificado</button></form>
+                  {% endif %}
+                  <form method="post" action="/admin/usuarios/{{ u.id }}/suspender"><button class="admin-btn admin-btn-yellow">{% if u.activo %}⏸ Suspender{% else %}▶ Activar{% endif %}</button></form>
+                {% endif %}
+                {% if admin.nivel == 'super_admin' %}
+                  <form method="post" action="/admin/usuarios/{{ u.id }}/eliminar" onsubmit="return confirm('¿Eliminar este usuario y TODO lo suyo (empleos, aplicaciones, chats)? No se puede deshacer.')"><button class="admin-btn admin-btn-red">🗑 Eliminar</button></form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No hay usuarios con estos filtros.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+</body>
+</html>

@@ -18,8 +18,8 @@ from presentacion.rutas.media import router as media_router
 
 from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
+from presentacion.rutas.admin import router as admin_router
 
-from presentacion.rutas import admin
 
 
 app = FastAPI(title="JobWalpy", description="Plataforma de empleo")
