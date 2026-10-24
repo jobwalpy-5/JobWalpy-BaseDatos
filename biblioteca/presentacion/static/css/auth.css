@@ -43,15 +43,13 @@ body {
 }
 
 .logo-box {
-  background: var(--primary);
-  color: #fff;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
+    width: 150px;      /* Controla el ancho del logo */
+    height: auto;      /* Mantiene la proporción original */
+    display: block;    /* Ayuda a centrarlo o alinearlo mejor */
+    margin: 10px;      /* Le da un espacio alrededor */
+    border-radius: 6px; /* Redondea las esquinas del logo */
 }
+
 
 .logo-text {
   font-family: var(--font-display);

@@ -16,13 +16,6 @@ Qué hay aquí:
     4. new_token()        -> genera tokens aleatorios seguros, usados para
                              verificación de email.
 
-Por qué esto importa:
-    Antes, en database.py, las contraseñas se guardaban tal cual:
-        {"password": "1234"}
-    Eso significa que cualquiera con acceso a la base de datos (o a un
-    backup, o a un error de log) ve la contraseña real de cada usuario.
-    Como casi nadie reutiliza contraseñas... es broma, todo el mundo las
-    reutiliza. Por eso SIEMPRE se debe guardar un hash, nunca la contraseña.
 """
 
 import hashlib
@@ -37,14 +30,7 @@ PBKDF2_ITERATIONS = 260_000
 
 
 def hash_password(password: str) -> str:
-    """
-    Convierte una contraseña en texto plano en un string seguro para guardar
-    en la base de datos, con el formato:  "salt$hash"
 
-    El "salt" es aleatorio y distinto para cada usuario. Esto evita que dos
-    usuarios con la misma contraseña ("123456") tengan el mismo hash guardado,
-    lo cual protege contra ataques de "rainbow tables".
-    """
     salt = secrets.token_hex(16)
     pwd_hash = hashlib.pbkdf2_hmac(
         "sha256",
@@ -56,13 +42,6 @@ def hash_password(password: str) -> str:
 
 
 def verify_password(password: str, stored_hash: str) -> bool:
-    """
-    Verifica si `password` (lo que el usuario escribió al hacer login)
-    corresponde al `stored_hash` guardado en la base de datos.
-
-    Usamos hmac.compare_digest en vez de "==" para comparar los hashes,
-    porque "==" puede filtrar información por temporización (timing attack).
-    """
     try:
         salt, pwd_hash = stored_hash.split("$")
     except (ValueError, AttributeError):
