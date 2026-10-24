@@ -155,20 +155,7 @@ CREATE INDEX IF NOT EXISTS idx_conversaciones_b ON conversaciones (participante_
 CREATE INDEX IF NOT EXISTS idx_conversaciones_aplicacion ON conversaciones (aplicacion_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_conversacion ON mensajes (conversacion_id, id);
 
--- ------------------------------------------------------------
--- PORTAFOLIOS
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS portafolios (
-    id            TEXT PRIMARY KEY,
-    usuario_id    TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    titulo        TEXT NOT NULL,
-    descripcion   TEXT DEFAULT '',
-    archivo_url   TEXT NOT NULL,
-    creado_at     TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_portafolios_usuario ON portafolios (usuario_id);
-
+-- aqui se elimino la tabla de portafolios
 -- ------------------------------------------------------------
 -- Vista: empleos activos
 -- ------------------------------------------------------------
@@ -335,20 +322,7 @@ CREATE INDEX IF NOT EXISTS idx_conversaciones_b ON conversaciones (participante_
 CREATE INDEX IF NOT EXISTS idx_conversaciones_aplicacion ON conversaciones (aplicacion_id);
 CREATE INDEX IF NOT EXISTS idx_mensajes_conversacion ON mensajes (conversacion_id, id);
 
--- ------------------------------------------------------------
--- PORTAFOLIOS
--- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS portafolios (
-    id            TEXT PRIMARY KEY,
-    usuario_id    TEXT NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
-    titulo        TEXT NOT NULL,
-    descripcion   TEXT DEFAULT '',
-    archivo_url   TEXT NOT NULL,
-    creado_at     TEXT NOT NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_portafolios_usuario ON portafolios (usuario_id);
-
+-- aqui se elimino la tabla de portafolios
 -- ------------------------------------------------------------
 -- Vista: empleos activos
 -- ------------------------------------------------------------

@@ -210,7 +210,7 @@ def actualizar_perfil(user_id: str, rol: str, data: dict) -> None:
         if rol == "buscador":
             campos = {"name": "nombre", "bio": "bio", "location": "ubicacion",
                       "phone": "telefono", "experience": "experiencia",
-                      "education": "educacion", "cv_url": "cv_url"}
+                      "education": "educacion", "cv_url": "cv_url", "profile_photo_url": "profile_photo_url"}
             sets, valores = [], []
             for k, columna in campos.items():
                 if k in data and data[k] is not None:
