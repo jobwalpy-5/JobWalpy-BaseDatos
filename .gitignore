@@ -2,9 +2,6 @@
 venv/
 __pycache__/
 *.pyc
- 
-data/*.json
+.env
 jobwalpy.db
-.env
-static/uploads/
-.env
+biblioteca/presentacion/static/uploads/

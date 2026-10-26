@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, UploadFile, File, Form
 from fastapi.responses import RedirectResponse
 
 from dominio import servicios as db
-from nucleo import almacenamiento as storage
+
 
 router = APIRouter()
 
@@ -38,21 +38,3 @@ async def set_profile_photo(request: Request, photo_url: str = Form(...)):
     db.update_user(user["id"], {"profile_photo_url": photo_url})
     return RedirectResponse("/profile?success=foto_actualizada", status_code=302)
 
-# ── VIDEO DE PRESENTACIÓN ──────────────────────────────────────────────────────
-@router.post("/profile/video")
-async def upload_video_presentation(request: Request, video: UploadFile = File(...)):
-    user = _require_buscador(request)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-
-    content = await video.read()
-    try:
-        url = storage.upload_presentation_video(user["id"], video.filename, content)
-    except (storage.ArchivoInvalidoError, RuntimeError) as e:
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
-
-    db.update_user(user["id"], {"presentation_video_url": url})
-    return RedirectResponse("/profile?success=video_actualizado", status_code=302)
-
-
-# aqui se eliminó la parte del portafolio

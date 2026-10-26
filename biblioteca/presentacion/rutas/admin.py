@@ -36,6 +36,8 @@ def iniciar_sesion_admin(response, admin_id: str) -> None:
         key=NOMBRE_COOKIE, value=sesion_admin.firmar(admin_id),
         max_age=sesion_admin.DURACION_SEGUNDOS,
         httponly=True, samesite="lax", path="/",
+        secure=os.environ.get("COOKIE_SECURE") == "1",   # en Vercel: COOKIE_SECURE=1
+
     )
 
 

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from datetime import date
 import re
@@ -172,7 +172,7 @@ class ApplicationCreate(BaseModel):
     user_id: str
     cover_letter: Optional[str] = ""
     status: str = "pendiente"
-    applied_at: str = str(date.today())
+    applied_at: str = Field(default_factory=lambda: str(date.today()))
 
 
 class ApplicationOut(ApplicationCreate):

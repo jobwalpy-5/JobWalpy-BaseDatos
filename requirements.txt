@@ -1,8 +1,8 @@
-fastapi
+"fastapi==x.y.z"
 uvicorn
 jinja2
 python-multipart
 psycopg[binary]
 python-dotenv
 email-validator
-minio
+tzdata

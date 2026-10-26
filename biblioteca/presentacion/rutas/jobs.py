@@ -4,30 +4,34 @@ from datetime import date
 from dominio import servicios as db
 from presentacion.plantillas import templates
 from presentacion.rutas.context_helper import chat_context
- 
+
 router = APIRouter()
- 
+
 # ── VER TODOS LOS EMPLEOS ─────────────────────────────────────────────────────
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(
-    request: Request, 
-    search: str = "", 
+    request: Request,
+    search: str = "",
     category: str = "",
-    type: str = "" 
-): # 👈 CORREGIDO: Eliminado user_id de los parámetros
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN: Lectura segura desde el request
-    
-    jobs = db.get_jobs()
+    type: str = ""
+):
+    user_id = request.cookies.get("user_id")
+
+    # ← CAMBIO 1: solo empleos activos (una sola consulta a la base de datos)
+    activos = [j for j in db.get_jobs() if j["active"]]
+
+    jobs = activos
     if search:
         jobs = [j for j in jobs if search.lower() in j["title"].lower() or search.lower() in j["company"].lower()]
     if category:
         jobs = [j for j in jobs if j["category"] == category]
     if type:
         jobs = [j for j in jobs if j["type"] == type]
-        
-    categories = list(set(j["category"] for j in db.get_jobs()))
+
+    # ← CAMBIO 2: categorías ordenadas y solo de empleos activos
+    categories = sorted({j["category"] for j in activos})
     ctx = chat_context(user_id)
-    
+
     return templates.TemplateResponse(request=request, name="jobs.html", context={
         **ctx,
         "jobs": jobs, "categories": categories,
@@ -35,74 +39,81 @@ async def jobs_page(
         "selected_type": type,
         "total": len(jobs)
     })
- 
+
 # ── DETALLE DE UN EMPLEO ──────────────────────────────────────────────────────
 @router.get("/jobs/{job_id}", response_class=HTMLResponse)
-async def job_detail(request: Request, job_id: str): # 👈 CORREGIDO
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
-    
+async def job_detail(request: Request, job_id: str):
+    user_id = request.cookies.get("user_id")
+
     job = db.get_job(job_id)
-    if not job:
+    # ← CAMBIO 3: un empleo desactivado solo lo ve su dueño
+    if not job or (not job["active"] and str(job.get("posted_by")) != str(user_id)):
         return RedirectResponse("/jobs")
-        
+
     ctx = chat_context(user_id)
     applications = db.get_applications_by_job(job_id)
     already_applied = any(a["user_id"] == user_id for a in applications) if user_id else False
-    
+
     return templates.TemplateResponse(request=request, name="job_detail.html", context={
         **ctx,
         "job": job, "already_applied": already_applied,
         "applicant_count": len(applications)
     })
- 
+
 # ── FORMULARIO: PUBLICAR TRABAJO ──────────────────────────────────────────────
 @router.get("/post-job", response_class=HTMLResponse)
-async def post_job_page(request: Request): # 👈 CORREGIDO
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
-    
+async def post_job_page(request: Request):
+    user_id = request.cookies.get("user_id")
+
     ctx = chat_context(user_id)
     if not ctx["user"] or ctx["user"].get("role") != "empleador":
         return RedirectResponse("/login?next=/post-job")
     return templates.TemplateResponse(request=request, name="post_job.html", context=ctx)
- 
+
 # ── ACCIÓN: CREAR TRABAJO ─────────────────────────────────────────────────────
 @router.post("/post-job")
 async def post_job(
     request: Request,
-    title: str = Form(...), company: str = Form(...),
+    # ← CAMBIO 4: se quitó el parámetro "company" (ahora sale de la cuenta del empleador)
+    title: str = Form(...),
     location: str = Form(...), type: str = Form(...),
     category: str = Form(...), description: str = Form(...),
-    requirements: str = Form(...), benefits: str = Form(...)
-): # 👈 CORREGIDO
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
-    
+    requirements: str = Form(...),
+    benefits: str = Form(default="")   # ← CAMBIO 5: opcional, como en el formulario
+):
+    user_id = request.cookies.get("user_id")
+
     ctx = chat_context(user_id)
     if not ctx["user"] or ctx["user"].get("role") != "empleador":
         return RedirectResponse("/login", status_code=302)
-        
+
     job = {
-        "title": title, "company": company, "location": location,
+        "title": title,
+        # ← CAMBIO 6: la empresa es la de la cuenta, no la que venga del formulario
+        "company": ctx["user"].get("company_name") or ctx["user"]["name"],
+        "location": location,
         "type": type, "category": category, "description": description,
-        "requirements": [r.strip() for r in requirements.split(",")],
-        "benefits": [b.strip() for b in benefits.split(",")],
+        # ← CAMBIO 7: se ignoran los elementos vacíos ("a, b," ya no crea un "" al final)
+        "requirements": [r.strip() for r in requirements.split(",") if r.strip()],
+        "benefits": [b.strip() for b in benefits.split(",") if b.strip()],
         "posted_by": user_id, "posted_at": str(date.today()), "active": True
     }
     new_job = db.create_job(job)
     return RedirectResponse(f"/jobs/{new_job['id']}", status_code=302)
- 
+
 # ── ACCIÓN: POSTULARSE A UN EMPLEO ────────────────────────────────────────────
 @router.post("/jobs/{job_id}/apply")
 async def apply_job(
-    request: Request, # 👈 AÑADIDO: Necesitamos el request para leer las cookies
+    request: Request,
     job_id: str,
     cover_letter: str = Form(...),
     phone: str = Form(...),
     experience_years: str = Form(...),
     education_level: str = Form(...),
     availability: str = Form(...)
-): # 👈 CORREGIDO
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
-    
+):
+    user_id = request.cookies.get("user_id")
+
     if not user_id:
         return RedirectResponse("/login", status_code=302)
 
@@ -117,7 +128,7 @@ async def apply_job(
     existing = db.get_applications_by_job(job_id)
     if any(a["user_id"] == user_id for a in existing):
         return RedirectResponse(f"/jobs/{job_id}?error=ya_aplicaste", status_code=302)
-        
+
     db.create_application({
         "job_id": job_id,
         "user_id": user_id,
@@ -130,15 +141,15 @@ async def apply_job(
         "applied_at": str(date.today())
     })
     return RedirectResponse(f"/jobs/{job_id}?success=aplicacion_enviada", status_code=302)
- 
+
 # ── ACCIÓN: ELIMINAR UN EMPLEO ────────────────────────────────────────────────
 @router.post("/jobs/{job_id}/delete")
-async def delete_job_route(request: Request, job_id: str): # 👈 CORREGIDO (Añadido request)
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
-    
+async def delete_job_route(request: Request, job_id: str):
+    user_id = request.cookies.get("user_id")
+
     job = db.get_job(job_id)
-    if not job or job.get("posted_by") != user_id:
+    if not job or str(job.get("posted_by")) != str(user_id):
         return RedirectResponse("/jobs", status_code=302)
-        
+
     db.delete_job(job_id)
     return RedirectResponse("/jobs", status_code=302)

@@ -49,7 +49,8 @@ def _fila_a_usuario(conn, row: dict) -> dict:
             "name": p["nombre"], "phone": p["telefono"], "location": p["ubicacion"],
             "bio": p["bio"], "skills": json.loads(p["skills"] or "[]"),
             "experience": p["experiencia"], "education": p["educacion"],
-            "cv_url": p["cv_url"], "avatar": p["avatar"], "avatar_color": p["avatar_color"],
+            "cv_url": p["cv_url"], "avatar": p["avatar"], "avatar_color": p["avatar_color"], "profile_photo_url": p["profile_photo_url"],
+            "presentation_video_url": p["presentation_video_url"],
             "verified_company": False,
         })
     else:
@@ -68,9 +69,9 @@ def _fila_a_usuario(conn, row: dict) -> dict:
     return base
 
 
-def contar_usuarios() -> int:
+def contar_usuarios_activos() -> int:
     with get_conn() as conn:
-        return conn.execute("SELECT COUNT(*) AS n FROM usuarios").fetchone()["n"]
+        return conn.execute("SELECT COUNT(*) AS n FROM usuarios WHERE activo = TRUE").fetchone()["n"]
 
 
 def existe_email(email: str) -> bool:
@@ -307,7 +308,7 @@ def _app_row_to_dict(row: dict) -> dict:
         "id": str(row["id"]), "job_id": row["empleo_id"], "user_id": row["usuario_id"],
         "cover_letter": row["carta_presentacion"], "phone": row["telefono"],
         "experience_years": row["anios_experiencia"], "education_level": row["nivel_educativo"],
-        "availability": row["disponibilidad"], "salary_expectation": row["pretension_salarial"],
+        "availability": row["disponibilidad"],
         "status": row["estado"], "applied_at": row["aplicado_at"],
     }
 
@@ -354,12 +355,13 @@ def insertar_aplicacion(app: dict) -> dict:
         try:
             row = conn.execute(
                 "INSERT INTO aplicaciones (empleo_id, usuario_id, carta_presentacion, telefono, "
-                "anios_experiencia, nivel_educativo, disponibilidad, pretension_salarial, estado, aplicado_at) "
-                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
+                "anios_experiencia, nivel_educativo, disponibilidad, estado, aplicado_at) "
+                "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING *",
                 (app["job_id"], app["user_id"], app.get("cover_letter", ""), app.get("phone", ""),
                  app.get("experience_years", ""), app.get("education_level", ""),
-                 app.get("availability", ""), app.get("salary_expectation", ""),
+                 app.get("availability", ""),
                  app.get("status", "pendiente"), app.get("applied_at", "")),
+
             ).fetchone()
         except psycopg.errors.UniqueViolation:
             raise YaAplicasteError("Ya aplicaste a este empleo.")
@@ -388,7 +390,8 @@ def listar_conversaciones_de_usuario(user_id: str) -> list:
     with get_conn() as conn:
         rows = conn.execute(
             "SELECT * FROM conversaciones WHERE participante_a = %s OR participante_b = %s "
-            "ORDER BY last_at DESC NULLS LAST, created_at DESC",
+            "ORDER BY (SELECT MAX(m.id) FROM mensajes m WHERE m.conversacion_id = conversaciones.id) "
+            "DESC NULLS LAST, created_at DESC",
             (uid, uid),
         ).fetchall()
     return [{

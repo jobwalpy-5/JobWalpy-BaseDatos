@@ -282,16 +282,21 @@ let lastId = "{{ active_conv.messages[-1].id if active_conv.messages else 0 }}";
 function scrollBottom() { container.scrollTop = container.scrollHeight; }
 scrollBottom();
 
+const esc = s => String(s).replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 function appendMessage(msg) {
   const mine = msg.sender_id === myId;
   const div = document.createElement('div');
   div.className = `msg ${mine ? 'mine' : 'theirs'}`;
+  
   div.innerHTML = `
-    <div class="msg-avatar" style="background:${msg.sender_color};">${msg.sender_avatar}</div>
+   <div class="msg-avatar" style="background:${esc(msg.sender_color)};">${esc(msg.sender_avatar)}</div>
     <div>
-      <div class="msg-bubble">${msg.text}</div>
-      <div class="msg-time">${msg.at}</div>
-    </div>`;
+      <div class="msg-bubble">${esc(msg.text)}</div>
+      <div class="msg-time">${esc(msg.at)}</div>
+    </div>
+`;
   container.appendChild(div);
   scrollBottom();
 }

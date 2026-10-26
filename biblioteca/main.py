@@ -19,11 +19,12 @@ from presentacion.rutas.media import router as media_router
 from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
 from presentacion.rutas.admin import router as admin_router
-
+from nucleo.sesion_usuario import SesionFirmadaMiddleware
 
 
 app = FastAPI(title="JobWalpy", description="Plataforma de empleo")
 app.mount("/static", StaticFiles(directory=str(DIR_STATIC)), name="static")
+app.add_middleware(SesionFirmadaMiddleware)
 
 app.include_router(jobs_router)
 app.include_router(users_router)
@@ -40,7 +41,7 @@ async def home(request: Request, user_id: str = Cookie(default=None)):
 
     stats = {
         "total_jobs":   len([j for j in all_jobs if j.get("active", True)]),
-        "total_users":  len(db.get_users()),
+        "total_users":  db.contar_usuarios_activos(),
         "categories":   len(categories),
         "applications": len(db.get_applications()),
     }

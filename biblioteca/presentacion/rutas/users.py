@@ -2,17 +2,20 @@ from fastapi import APIRouter, Request, Form, UploadFile, File
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from typing import Optional
+from pathlib import Path
 import re
 
 from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
-from dominio.esquemas import BuscadorCreate, EmpleadorCreate, BLOCKED_DOMAINS, validar_password_fuerte
+# ← CAMBIO 1: ya no hacen falta BLOCKED_DOMAINS ni validar_password_fuerte aquí
+from dominio.esquemas import BuscadorCreate, EmpleadorCreate
 from presentacion.rutas.context_helper import chat_context
 from presentacion.rutas.admin import iniciar_sesion_admin
+from nucleo.sesion_usuario import iniciar_sesion
 
 router = APIRouter()
 
-PASSWORD_RE = re.compile(r'^(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()\-_.,?":{}|<>]).{8,}$')
+# ← CAMBIO 2: se eliminó PASSWORD_RE (ahora valida EmpleadorCreate)
 
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────────
@@ -25,15 +28,12 @@ async def login_page(request: Request, next: str = "/"):
         return RedirectResponse("/")
     return templates.TemplateResponse(request=request, name="login.html", context={"next": next})
 
-   
 
-   
-
+# ← CAMBIO 3: "def" en vez de "async def" (el hash de la contraseña es pesado y así no congela el servidor)
 @router.post("/login")
-async def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form(default="/")):
+def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form(default="/")):
 
-
-      # 1) ¿Es un administrador? (tabla aparte; se revisa primero)
+    # 1) ¿Es un administrador? (tabla aparte; se revisa primero)
     admin = db.verify_admin_login(email, password)
     if admin:
         response = RedirectResponse("/admin/dashboard", status_code=302)
@@ -41,24 +41,17 @@ async def login(request: Request, email: str = Form(...), password: str = Form(.
         return response
 
     # 2) Si no, es un usuario normal.
-
-    
     # db.verify_login hashea internamente y compara de forma segura; nunca compara texto plano.
     user = db.verify_login(email, password)
     if not user:
         return templates.TemplateResponse(request=request, name="login.html",
             context={"error": "Correo o contraseña incorrectos", "next": next})
 
-    destino = next if next and next.startswith("/") else "/"
+    # ← CAMBIO 4: evita redirecciones a otros sitios ("//sitio-malo.com" o "/\")
+    destino = next if (next.startswith("/") and not next.startswith("//") and "\\" not in next) else "/"
     response = RedirectResponse(destino, status_code=302)
-    response.set_cookie(
-        key="user_id",
-        value=str(user["id"]),
-        max_age=2592000,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    # ← CAMBIO 5: cookie FIRMADA (en vez de guardar el id en texto plano)
+    iniciar_sesion(response, user["id"])
     return response
 
 
@@ -70,7 +63,7 @@ async def register_page(request: Request):
 
 
 @router.post("/register")
-async def register(
+def register(   # ← CAMBIO 6: "def" (por el mismo motivo del hash)
     request: Request,
     name: str = Form(...), email: str = Form(...),
     password: str = Form(...), role: str = Form(...),
@@ -102,14 +95,8 @@ async def register(
     db.generar_token_verificacion(user["id"])
 
     response = RedirectResponse("/profile", status_code=302)
-    response.set_cookie(
-        key="user_id",
-        value=str(user["id"]),
-        max_age=2592000,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    # ← CAMBIO 7: cookie firmada
+    iniciar_sesion(response, user["id"])
     return response
 
 
@@ -144,14 +131,12 @@ async def register_employer(
         "industry": industry, "size": size, "website": website
     }
 
+    # ← CAMBIO 8: se valida con EmpleadorCreate (correo corporativo, contraseña fuerte, NIT obligatorio)
     errors = []
-    domain = email.split("@")[-1].lower()
-    if domain in BLOCKED_DOMAINS:
-        errors.append(f"Usa un correo corporativo, no @{domain}.")
-    if not PASSWORD_RE.match(password):
-        errors.append("La contraseña debe tener mínimo 8 caracteres, una mayúscula, un número y un carácter especial.")
-    if not tax_id.strip():
-        errors.append("El NIT / RUT / RFC es obligatorio.")
+    try:
+        EmpleadorCreate(**form_data, password=password)
+    except ValidationError as e:
+        errors = [err["msg"].replace("Value error, ", "") for err in e.errors()]
 
     if errors:
         return templates.TemplateResponse(request=request, name="register_employer.html",
@@ -160,12 +145,19 @@ async def register_employer(
     # Guardar el documento de verificación (Cámara de Comercio) si lo subieron.
     doc_relpath = ""
     if document and document.filename:
+        content = await document.read()
+        # ← CAMBIO 9: solo PDF/JPG/PNG y máximo 5 MB
+        ext = Path(document.filename).suffix.lower()
+        if ext not in {".pdf", ".jpg", ".jpeg", ".png"} or len(content) > 5 * 1024 * 1024:
+            return templates.TemplateResponse(request=request, name="register_employer.html",
+                context={"errors": ["El documento debe ser PDF, JPG o PNG de máximo 5 MB."],
+                         "form": form_data})
+
         safe_name = re.sub(r"[^a-zA-Z0-9_.-]", "_", document.filename)
         upload_dir = DIR_STATIC / "uploads" / "docs"
         upload_dir.mkdir(parents=True, exist_ok=True)
         clean_tax_id = re.sub(r"[^a-zA-Z0-9]", "", tax_id)
         stored_name = f"{clean_tax_id}_{safe_name}"
-        content = await document.read()
         with open(upload_dir / stored_name, "wb") as f:
             f.write(content)
         doc_relpath = f"docs/{stored_name}"
@@ -189,14 +181,8 @@ async def register_employer(
     db.generar_token_verificacion(user["id"])
 
     response = RedirectResponse("/profile", status_code=302)
-    response.set_cookie(
-        key="user_id",
-        value=str(user["id"]),
-        max_age=2592000,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    # ← CAMBIO 10: cookie firmada
+    iniciar_sesion(response, user["id"])
     return response
 
 
@@ -241,7 +227,6 @@ async def profile_page(request: Request):
     posted_jobs = [j for j in db.get_jobs() if str(j.get("posted_by")) == str(user_id)]
     return templates.TemplateResponse(request=request, name="profile.html", context={
         **ctx, "applications": apps_with_jobs, "posted_jobs": posted_jobs,
-       
     })
 
 

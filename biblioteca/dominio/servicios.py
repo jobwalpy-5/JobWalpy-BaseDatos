@@ -9,7 +9,7 @@ Los nombres de las funciones públicas son los mismos que tenía database.py,
 así que en las rutas solo cambia la línea del import.
 """
 from datetime import date, datetime, timedelta
-
+from zoneinfo import ZoneInfo
 from dominio import datos_demo
 from dominio import repositorios as repo
 from dominio.errores import (  # noqa: F401  (se re-exportan para que las rutas los importen desde aquí)
@@ -39,6 +39,8 @@ def _normalizar_email(email: str) -> str:
 def get_users() -> list:
     return repo.listar_usuarios_activos()
 
+def contar_usuarios_activos() -> int:
+    return repo.contar_usuarios_activos()
 
 def get_user(user_id: str) -> dict | None:
     """
@@ -269,7 +271,7 @@ def get_or_create_conversation(user1_id: str, user2_id: str, aplicacion_id: int 
 
 
 def add_message_to_conversation(conv_id: str, sender_id: str, text: str) -> dict | None:
-    ahora = datetime.utcnow()
+    ahora = datetime.now(ZoneInfo("America/Bogota"))
     fila = repo.insertar_mensaje(conv_id, sender_id, text, ahora.strftime("%H:%M"), ahora.isoformat())
     return _armar_mensaje(fila, {})
 

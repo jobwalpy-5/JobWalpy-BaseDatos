@@ -5,6 +5,7 @@ from presentacion.plantillas import templates
 
 router = APIRouter()
 
+ESTADOS_VALIDOS = {"pendiente", "aceptado", "rechazado"}
 
 # ── VER APLICACIONES RECIBIDAS (empleador) ────────────────────────────────────
 # NOTA: esta ruta no existía en la versión anterior — sin ella, applications.html
@@ -53,6 +54,11 @@ async def update_status(
     user = db.get_active_user(user_id)
     if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
+    
+    if status not in ESTADOS_VALIDOS:
+        return RedirectResponse("/applications", status_code=302)
+
+
 
     application = db.get_application(application_id)
     if not application:
