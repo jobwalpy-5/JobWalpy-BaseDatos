@@ -15,8 +15,7 @@ DURACION_SEGUNDOS = 8 * 60 * 60  # la sesión de admin dura 8 horas
 
 
 def _secreto() -> bytes:
-    # Si defines SECRET_KEY en Vercel/Codespaces se usa esa. Si no, se deriva de
-    # DATABASE_URL, que ya es un secreto que solo existe en el servidor.
+    
     base = os.environ.get("SECRET_KEY") or os.environ.get("DATABASE_URL") or ""
     if not base:
         raise RuntimeError("No hay SECRET_KEY ni DATABASE_URL para firmar la sesión de admin.")

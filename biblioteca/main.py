@@ -30,7 +30,7 @@ app.include_router(users_router)
 app.include_router(applications_router)
 app.include_router(chat_router)
 app.include_router(media_router)
-app.include_router(admin.router)
+app.include_router(admin_router)
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request, user_id: str = Cookie(default=None)):

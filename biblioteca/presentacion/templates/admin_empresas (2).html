@@ -1,0 +1,25 @@
+{% extends "admin_base.html" %}
+{% block titulo %}Empresas{% endblock %}
+{% block contenido %}
+<div class="admin-topbar">
+  <div>
+    <h1 class="admin-page-title">Gestión de Empresas</h1>
+    <p class="admin-page-sub">Revisa el documento antes de aprobar</p>
+  </div>
+</div>
+<div class="admin-content">
+  <form method="get" action="/admin/empresas" class="admin-filter-bar"
+        hx-get="/admin/empresas" hx-target="#resultado" hx-push-url="true"
+        hx-trigger="change" hx-indicator="#resultado">
+    <select name="estado" class="admin-filter-select">
+      <option value="">Todos los estados</option>
+      <option value="pendiente" {% if estado=='pendiente' %}selected{% endif %}>Pendientes</option>
+      <option value="aprobado" {% if estado=='aprobado' %}selected{% endif %}>Aprobadas</option>
+      <option value="rechazado" {% if estado=='rechazado' %}selected{% endif %}>Rechazadas / suspendidas</option>
+    </select>
+    <noscript><button type="submit" class="btn btn-primary btn-sm">Filtrar</button></noscript>
+    <a href="/admin/empresas" class="btn btn-outline btn-sm">Ver todas</a>
+  </form>
+  <div id="resultado">{% include "_admin_empresas_lista.html" %}</div>
+</div>
+{% endblock %}

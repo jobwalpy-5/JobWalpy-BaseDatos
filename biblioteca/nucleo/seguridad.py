@@ -1,11 +1,5 @@
 """
-auth.py — Utilidades de seguridad (JobWalpy)
-==============================================
 
-Este archivo NO depende de librerías externas (ni bcrypt, ni passlib).
-Todo se hace con el módulo estándar `hashlib` de Python para evitar
-problemas de instalación en entornos serverless (Vercel) donde compilar
-extensiones en C puede fallar.
 
 Qué hay aquí:
     1. hash_password()   -> convierte una contraseña en texto plano en un

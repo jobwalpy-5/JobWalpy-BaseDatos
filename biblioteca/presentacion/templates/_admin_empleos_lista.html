@@ -1,0 +1,12 @@
+<div class="admin-count">{{ empleos|length }} empleo(s) encontrado(s)</div>
+<div class="admin-table-card">
+  <table class="admin-table">
+    <thead><tr><th>Título</th><th>Empresa</th><th>Ubicación</th><th>Estado</th><th>Publicado</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for j in empleos %}{% include "_admin_empleo_fila.html" %}
+      {% else %}
+      <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No hay empleos con estos filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

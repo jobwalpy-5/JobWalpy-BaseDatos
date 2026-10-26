@@ -1,0 +1,27 @@
+<tr id="empresa-{{ e.usuario_id }}">
+  <td><div style="font-weight:600;color:var(--primary);">{{ e.company_name }}</div><div style="font-size:11px;color:var(--text-muted);">{{ e.legal_name }}</div></td>
+  <td style="color:var(--text-muted);font-size:13px;">{{ e.tax_id }}</td>
+  <td><div style="font-size:13px;">{{ e.contact_name }}</div><div style="font-size:11px;color:var(--text-muted);">{{ e.correo }}</div></td>
+  <td style="color:var(--text-muted);font-size:13px;">{{ e.industry }}</td>
+  <td style="font-size:13px;">{% if e.documento_path %}<a href="/static/uploads/{{ e.documento_path }}" target="_blank" rel="noopener">Ver</a>{% else %}<span style="color:var(--danger);">Sin documento</span>{% endif %}</td>
+  <td>
+    {% if e.activo and e.verificado %}<span class="tag" style="background:rgba(16,185,129,0.1);color:#065f46;">✓ Aprobada</span>
+    {% elif e.activo %}<span class="tag" style="background:rgba(245,158,11,0.1);color:#92400e;">Pendiente</span>
+    {% else %}<span class="tag" style="background:rgba(239,68,68,0.1);color:#b91c1c;">✕ Rechazada / suspendida</span>{% endif %}
+  </td>
+  <td>
+    <div class="admin-acciones">
+      {% if admin.nivel != 'soporte' %}
+        {% if not e.verificado or not e.activo %}
+        <button class="admin-btn admin-btn-green" hx-post="/admin/empresas/{{ e.usuario_id }}/aprobar" hx-target="#empresa-{{ e.usuario_id }}" hx-swap="outerHTML">✓ Aprobar</button>
+        {% endif %}
+        {% if e.activo %}
+        <button class="admin-btn admin-btn-yellow" hx-post="/admin/empresas/{{ e.usuario_id }}/rechazar" hx-target="#empresa-{{ e.usuario_id }}" hx-swap="outerHTML">✕ Rechazar</button>
+        {% endif %}
+      {% endif %}
+      {% if admin.nivel == 'super_admin' %}
+        <button class="admin-btn admin-btn-red" hx-post="/admin/empresas/{{ e.usuario_id }}/eliminar" hx-confirm="¿Eliminar esta empresa y TODO lo suyo? No se puede deshacer." hx-target="#empresa-{{ e.usuario_id }}" hx-swap="outerHTML">🗑 Eliminar</button>
+      {% endif %}
+    </div>
+  </td>
+</tr>
