@@ -1,8 +1,5 @@
 """
-CAPA 2 · LÓGICA — servicios.
 
-Aquí viven las REGLAS del negocio: qué se valida antes de guardar, cómo se
-arma un avatar, cuándo expira un token, cómo se verifica un login...
 
 Las rutas (presentacion/rutas/) llaman SOLO a este archivo.
 Este archivo llama SOLO a repositorios.py para tocar la base de datos.
@@ -166,7 +163,7 @@ def get_job(job_id: str) -> dict | None:
 
 def create_job(job: dict) -> dict:
     """
-    job: dict con title, company, location, salary_min, salary_max, type,
+    job: dict con title, company, location, type,
     category, description, requirements (list), benefits (list), posted_by,
     posted_at, active. El id es un UUID real, igual que con los usuarios.
     """
@@ -206,7 +203,7 @@ def get_applications_by_job(job_id: str) -> list:
 def create_application(app: dict) -> dict:
     """
     app: dict con job_id, user_id, cover_letter, phone, experience_years,
-    education_level, availability, salary_expectation, status, applied_at.
+    education_level, availability, status, applied_at.
     Lanza YaAplicasteError si la persona ya había aplicado a ese empleo.
     """
     return repo.insertar_aplicacion(app)
@@ -353,28 +350,6 @@ def sembrar_cuentas_demo() -> dict:
         _sembrar_cuenta(c, "buscador", resultado)
     return resultado
 
-# ── ADMIN ─────────────────────────────────────────────────────────────────────
-def es_admin(user) -> bool:
-    return bool(user) and user.get("role") == "admin"
-
-
-def admin_resumen() -> dict:
-    return repo.contar_resumen()
-
-
-def admin_listar_empleadores() -> list:
-    return repo.listar_empleadores_admin()
-
-
-def admin_verificar_empleador(user_id: str, valor: bool) -> None:
-    repo.set_verificado_empleador(user_id, valor)
-
-
-def admin_cambiar_activo(user_id: str, activo: bool) -> None:
-    repo.set_activo_usuario(user_id, activo)
-
-    
-
 # ══════════════════════════════════════════════════════════════════════════════
 # ADMINISTRADORES — aquí están las DECISIONES; el SQL vive en repositorios.py
 # ══════════════════════════════════════════════════════════════════════════════
@@ -483,3 +458,14 @@ def admin_alternar_empleo(job_id: str) -> bool:
 
 def admin_borrar_empleo(job_id: str) -> bool:
     return repo.admin_borrar_empleo(job_id)
+
+def admin_obtener_usuario(user_id: str) -> dict | None:
+    return repo.admin_obtener_usuario(user_id)
+
+
+def admin_obtener_empleador(user_id: str) -> dict | None:
+    return repo.admin_obtener_empleador(user_id)
+
+
+def admin_obtener_empleo(job_id: str) -> dict | None:
+    return repo.admin_obtener_empleo(job_id)

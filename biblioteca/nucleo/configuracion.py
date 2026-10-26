@@ -1,6 +1,4 @@
-"""
-CAPA 1 · CONEXIÓN — configuración.
-"""
+
 import os
 
 DATABASE_URL = os.environ.get("DATABASE_URL")

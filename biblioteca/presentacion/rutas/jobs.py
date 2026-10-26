@@ -72,8 +72,7 @@ async def post_job(
     title: str = Form(...), company: str = Form(...),
     location: str = Form(...), type: str = Form(...),
     category: str = Form(...), description: str = Form(...),
-    requirements: str = Form(...), benefits: str = Form(...),
-    salary_min: int = Form(default=0), salary_max: int = Form(default=0)
+    requirements: str = Form(...), benefits: str = Form(...)
 ): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
     
@@ -84,9 +83,6 @@ async def post_job(
     job = {
         "title": title, "company": company, "location": location,
         "type": type, "category": category, "description": description,
-        # La BD exige salario_min/salario_max (NOT NULL). Si el formulario no los
-        # manda, se guarda 0 en vez de romper con un error 500.
-        "salary_min": salary_min, "salary_max": salary_max,
         "requirements": [r.strip() for r in requirements.split(",")],
         "benefits": [b.strip() for b in benefits.split(",")],
         "posted_by": user_id, "posted_at": str(date.today()), "active": True
@@ -103,14 +99,21 @@ async def apply_job(
     phone: str = Form(...),
     experience_years: str = Form(...),
     education_level: str = Form(...),
-    availability: str = Form(...),
-    salary_expectation: str = Form(...)
+    availability: str = Form(...)
 ): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
     
     if not user_id:
         return RedirectResponse("/login", status_code=302)
-        
+
+    # Solo un buscador con cuenta activa puede aplicar, y solo a un empleo que exista y esté activo.
+    user = db.get_active_user(user_id)
+    if not user or user.get("role") != "buscador":
+        return RedirectResponse(f"/jobs/{job_id}", status_code=302)
+    job = db.get_job(job_id)
+    if not job or not job.get("active", True):
+        return RedirectResponse("/jobs", status_code=302)
+
     existing = db.get_applications_by_job(job_id)
     if any(a["user_id"] == user_id for a in existing):
         return RedirectResponse(f"/jobs/{job_id}?error=ya_aplicaste", status_code=302)
@@ -123,7 +126,6 @@ async def apply_job(
         "experience_years": experience_years,
         "education_level": education_level,
         "availability": availability,
-        "salary_expectation": salary_expectation,
         "status": "pendiente",
         "applied_at": str(date.today())
     })

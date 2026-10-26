@@ -1,5 +1,4 @@
 """
-CAPA 2 · LÓGICA — datos de las cuentas de demostración.
 
 Solo contiene DATOS (nada de código). Para cambiar un nombre, un teléfono o
 agregar una cuenta, se edita aquí. La función que los usa es
