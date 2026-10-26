@@ -43,11 +43,11 @@ body {
 }
 
 .logo-box {
-    width: 150px;      /* Controla el ancho del logo */
-    height: auto;      /* Mantiene la proporción original */
-    display: block;    /* Ayuda a centrarlo o alinearlo mejor */
-    margin: 10px;      /* Le da un espacio alrededor */
-    border-radius: 6px; /* Redondea las esquinas del logo */
+    width: 70px;      
+    height: auto;      
+    display: block;  
+    margin: 10px;     
+    border-radius: 6px; 
 }
 
 
