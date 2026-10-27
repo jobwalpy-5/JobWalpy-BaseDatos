@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Chat — JobWalpy{% endblock %}
+{% block title %}Chat - JobWalpy{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -10,7 +10,7 @@
   overflow: hidden;
 }
 
-/* ── SIDEBAR ── */
+/* Barra lateral con la lista de conversaciones. */
 .chat-sidebar {
   border-right: 1px solid var(--border);
   background: #fff;
@@ -77,7 +77,7 @@
 .conv-time { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
 .no-convs { padding: 32px 16px; text-align: center; color: var(--text-muted); font-size: 13px; }
 
-/* ── MAIN ── */
+/* Zona principal con los mensajes de la conversación abierta. */
 .chat-main { display: flex; flex-direction: column; background: var(--bg-page); overflow: hidden; }
 
 .chat-empty {
@@ -155,7 +155,7 @@
       <button class="new-chat-btn" id="new-chat-btn">+</button>
     </div>
     <div class="chat-search">
-      <input type="text" id="conv-search" placeholder="Buscar conversación…" />
+      <input type="text" id="conv-search" placeholder="Buscar conversación..." />
     </div>
     <div class="conversations-list" id="conv-list">
       {% if conversations %}
@@ -207,13 +207,17 @@
     </div>
 
     <div class="chat-input-area">
-      <input type="text" class="chat-input" id="msg-input" placeholder="Escribe un mensaje…" autocomplete="off" />
-      <button class="send-btn" id="send-btn">➤</button>
+      <input type="text" class="chat-input" id="msg-input" placeholder="Escribe un mensaje..." autocomplete="off" />
+      <button class="send-btn" id="send-btn" aria-label="Enviar mensaje">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
     </div>
 
     {% else %}
     <div class="chat-empty">
-      <span class="empty-icon">💬</span>
+      <span class="empty-icon">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </span>
       <h3>Selecciona una conversación</h3>
       <p>O inicia una nueva con el botón <strong>+</strong></p>
     </div>
@@ -226,10 +230,10 @@
   <div class="modal" style="max-width:420px;">
     <div class="modal-header">
       <h3>Nueva conversación</h3>
-      <button class="modal-close" id="close-modal">✕</button>
+      <button class="modal-close" id="close-modal">&times;</button>
     </div>
     <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;">Selecciona un usuario para iniciar el chat</p>
-    <input type="text" id="user-search" placeholder="Buscar usuario…"
+    <input type="text" id="user-search" placeholder="Buscar usuario..."
       style="width:100%;padding:10px 14px;border-radius:var(--radius-sm);border:1px solid var(--border);
              background:var(--bg-page);font-family:var(--font);font-size:14px;outline:none;margin-bottom:12px;" />
     <div id="user-list" style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;">
@@ -238,7 +242,7 @@
         <div class="conv-avatar" style="background:{{ u.avatar_color }};width:36px;height:36px;font-size:12px;">{{ u.avatar }}</div>
         <div class="conv-info">
           <div class="conv-name">{{ u.name }}</div>
-          <div class="conv-preview">{{ u.role | capitalize }} · {{ u.location or "Sin ubicación" }}</div>
+          <div class="conv-preview">{{ u.role | capitalize }} - {{ u.location or "Sin ubicación" }}</div>
         </div>
       </a>
       {% endfor %}
@@ -249,7 +253,7 @@
 
 {% block extra_js %}
 <script>
-// ── MODAL ──
+// Ventana emergente para iniciar una nueva conversación y buscadores de la lista.
 const modal = document.getElementById('new-chat-modal');
 document.getElementById('new-chat-btn')?.addEventListener('click', () => modal.classList.add('open'));
 document.getElementById('close-modal')?.addEventListener('click', () => modal.classList.remove('open'));
@@ -269,62 +273,136 @@ document.getElementById('conv-search')?.addEventListener('input', function() {
   });
 });
 
-// ── POLLING ───────────────────────────────────────────────────────────────────
+
+// Chat en tiempo real con WebSocket.
 {% if active_conv and other_user %}
 const convId    = "{{ active_conv.id }}";
 const myId      = "{{ user.id }}";
 const container = document.getElementById('messages-container');
 const input     = document.getElementById('msg-input');
 const sendBtn   = document.getElementById('send-btn');
+const statusDot = document.querySelector('.chat-status');
 
-let lastId = "{{ active_conv.messages[-1].id if active_conv.messages else 0 }}";
+// Id del último mensaje que el servidor ya dibujó al cargar la página.
+let lastId = Number("{{ active_conv.messages[-1].id if active_conv.messages else 0 }}");
 
 function scrollBottom() { container.scrollTop = container.scrollHeight; }
 scrollBottom();
 
-const esc = s => String(s).replace(/[&<>"']/g,
-  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-
+// Se usa textContent y no innerHTML, de modo que un mensaje con código HTML
+// se muestra como texto y nunca se ejecuta.
 function appendMessage(msg) {
-  const mine = msg.sender_id === myId;
-  const div = document.createElement('div');
-  div.className = `msg ${mine ? 'mine' : 'theirs'}`;
-  
-  div.innerHTML = `
-   <div class="msg-avatar" style="background:${esc(msg.sender_color)};">${esc(msg.sender_avatar)}</div>
-    <div>
-      <div class="msg-bubble">${esc(msg.text)}</div>
-      <div class="msg-time">${esc(msg.at)}</div>
-    </div>
-`;
-  container.appendChild(div);
+  const mine = String(msg.sender_id) === myId;
+  const wrap = document.createElement('div');
+  wrap.className = `msg ${mine ? 'mine' : 'theirs'}`;
+
+  const avatar = document.createElement('div');
+  avatar.className = 'msg-avatar';
+  avatar.style.background = msg.sender_color;
+  avatar.textContent = msg.sender_avatar;
+
+  const col = document.createElement('div');
+  const bubble = document.createElement('div');
+  bubble.className = 'msg-bubble';
+  bubble.textContent = msg.text;
+  const time = document.createElement('div');
+  time.className = 'msg-time';
+  time.textContent = msg.at;
+  col.append(bubble, time);
+
+  wrap.append(avatar, col);
+  container.appendChild(wrap);
   scrollBottom();
 }
 
-// Enviar mensaje
+// Dibuja el mensaje solo si es más nuevo que el último mostrado, para evitar duplicados.
+function mostrarSiEsNuevo(msg) {
+  const id = Number(msg.id);
+  if (id <= lastId) return;
+  appendMessage(msg);
+  lastId = id;
+}
+
+// Recupera por HTTP los mensajes que pudieron llegar mientras el socket estaba desconectado.
+async function recuperarPerdidos() {
+  try {
+    const res = await fetch(`/api/chat/${convId}/messages?since=${lastId}`);
+    const data = await res.json();
+    (data.messages || []).forEach(mostrarSiEsNuevo);
+  } catch (e) {}
+}
+
+let socket = null;
+let intentos = 0;
+let pingTimer = null;
+
+// El punto de estado se ve de su color normal cuando hay conexión y gris cuando no la hay.
+function setConectado(ok) {
+  if (statusDot) statusDot.style.background = ok ? '' : '#9ca3af';
+}
+
+function conectar() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  socket = new WebSocket(`${proto}://${location.host}/ws/chat/${encodeURIComponent(convId)}`);
+
+  socket.onopen = () => {
+    intentos = 0;
+    setConectado(true);
+    recuperarPerdidos();
+    clearInterval(pingTimer);
+    // El ping periódico evita que los proxies cierren la conexión por inactividad.
+    pingTimer = setInterval(() => {
+      if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: 'ping' }));
+    }, 25000);
+  };
+
+  socket.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === 'message') mostrarSiEsNuevo(data.message);
+    else if (data.type === 'error') alert(data.error);
+    // El tipo "read" indica que el servidor ya guardó el "visto". La interfaz actual no lo muestra.
+  };
+
+  socket.onclose = () => {
+    setConectado(false);
+    clearInterval(pingTimer);
+    // Reintenta la conexión con espera creciente: 1 s, 2 s, 4 s, hasta un máximo de 15 s.
+    const espera = Math.min(1000 * 2 ** intentos, 15000);
+    intentos++;
+    setTimeout(conectar, espera);
+  };
+}
+
+// Envía por WebSocket cuando está conectado. Si no lo está (por ejemplo en un
+// hosting sin soporte de WebSocket), envía el mensaje por HTTP como respaldo.
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
-  input.value = '';
-  input.disabled = true;
+
+  if (socket && socket.readyState === WebSocket.OPEN) {
+    socket.send(JSON.stringify({ type: 'message', text }));
+    input.value = '';
+    input.focus();
+    return;
+  }
 
   try {
     const res = await fetch(`/api/chat/${convId}/send`, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
     });
     const data = await res.json();
     if (data.ok) {
-      appendMessage(data.message);
-      lastId = data.message.id;
+      mostrarSiEsNuevo(data.message);
+      input.value = '';
+    } else {
+      alert(data.error || 'No se pudo enviar el mensaje');
     }
-  } catch(e) {
-    console.error('Error enviando:', e);
-  } finally {
-    input.disabled = false;
-    input.focus();
+  } catch (e) {
+    alert('Sin conexión. Intenta de nuevo.');
   }
+  input.focus();
 }
 
 sendBtn.addEventListener('click', sendMessage);
@@ -332,23 +410,12 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-// Polling cada 2.5 segundos
-async function poll() {
-  try {
-    const res = await fetch(`/api/chat/${convId}/messages?since=${lastId}`);
-    const data = await res.json();
-    if (data.messages && data.messages.length > 0) {
-      data.messages.forEach(msg => {
-        if (msg.sender_id !== myId) {
-          appendMessage(msg);
-        }
-        lastId = msg.id;
-      });
-    }
-  } catch(e) {}
-}
+conectar();
 
-setInterval(poll, 2500);
+// Mientras el WebSocket esté desconectado, consulta los mensajes nuevos por HTTP cada 3 segundos.
+setInterval(() => {
+  if (!socket || socket.readyState !== WebSocket.OPEN) recuperarPerdidos();
+}, 3000);
 {% endif %}
 </script>
 {% endblock %}
