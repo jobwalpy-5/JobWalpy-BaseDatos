@@ -1,5 +1,5 @@
-"fastapi==x.y.z"
-uvicorn
+fastapi
+uvicorn[standard]
 jinja2
 python-multipart
 psycopg[binary]
