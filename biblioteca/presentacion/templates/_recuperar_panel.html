@@ -1,0 +1,64 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recuperar contraseña — JobWalpy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=REM:wght@100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/css/auth.css" />
+  <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+  <style>
+    .card { background: var(--bg-form); border-radius: var(--radius); padding: 36px 32px;
+            width: 100%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(1,47,94,.12); }
+    .card h1 { font-family: var(--font-display); color: var(--primary); font-size: 26px; margin-bottom: 10px; }
+    .card p  { color: var(--text-muted); font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+    .card form { display: flex; flex-direction: column; align-items: center; }
+    .card .box-sign-in { max-width: 100%; }
+    .card .btn-main { width: 100%; max-width: 300px; padding: 12px; border: none; border-radius: 12px; cursor: pointer;
+                      font-family: var(--font); font-weight: 700; font-size: 14px; color: #fff; margin-top: 6px;
+                      background: linear-gradient(to right, var(--primary), var(--primary-light)); }
+    .card .btn-main:hover { opacity: .9; }
+    .card .btn-main:disabled { opacity: .6; cursor: wait; }          /* mientras HTMX envía */
+    .card .volver { display: inline-block; margin-top: 18px; font-size: 13px; color: var(--text); text-decoration: none; }
+    .card .volver:hover { text-decoration: underline; }
+    .error-msg { background: rgba(239,68,68,.12); border: 1px solid rgba(239,68,68,.4); color: #b91c1c;
+                 padding: 10px 14px; border-radius: 10px; font-size: 13px; margin-bottom: 16px; }
+    #panel.htmx-swapping { opacity: 0; transition: opacity .15s; }    /* desvanecido suave al cambiar */
+  </style>
+</head>
+<body>
+
+  <a href="/" class="floating-logo">
+    <img class="logo-box" src="/static/img/logo.png" alt="Logo de mi proyecto">
+    <span class="logo-text">JobWalpy</span>
+  </a>
+
+  <div class="card">
+    <div id="panel" aria-live="polite">
+      {% include "_recuperar_panel.html" %}
+    </div>
+    <br />
+    <a href="/login" class="volver">← Volver a iniciar sesión</a>
+  </div>
+
+  <script>
+    // Ver / ocultar contraseña. Se usa delegación de eventos porque HTMX cambia el contenido
+    // del panel y los botones nuevos no existían cuando cargó la página.
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.toggle-pass');
+      if (!btn) return;
+      const input = document.getElementById(btn.dataset.target);
+      const mostrar = input.type === 'password';
+      input.type = mostrar ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', String(mostrar));
+      btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+      btn.querySelector('ion-icon').setAttribute('name', mostrar ? 'eye-off-outline' : 'eye-outline');
+    });
+  </script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</body>
+</html>

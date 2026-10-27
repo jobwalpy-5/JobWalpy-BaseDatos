@@ -1,37 +1,51 @@
-from fastapi import APIRouter, Request, Form, UploadFile, File
+from fastapi import APIRouter, Request, Form, UploadFile, File, Response
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import ValidationError
 from typing import Optional
 from pathlib import Path
+import os
 import re
 
 from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
-# ← CAMBIO 1: ya no hacen falta BLOCKED_DOMAINS ni validar_password_fuerte aquí
-from dominio.esquemas import BuscadorCreate, EmpleadorCreate
+# ← CAMBIO: ya no hacen falta BLOCKED_DOMAINS ni validar_password_fuerte aquí
+from dominio.esquemas import BuscadorCreate, EmpleadorCreate, validar_password_fuerte
 from presentacion.rutas.context_helper import chat_context
 from presentacion.rutas.admin import iniciar_sesion_admin
 from nucleo.sesion_usuario import iniciar_sesion
+from nucleo.correo import enviar_correo   # ← NUEVO
 
 router = APIRouter()
 
-# ← CAMBIO 2: se eliminó PASSWORD_RE (ahora valida EmpleadorCreate)
+# ← CAMBIO: se eliminó PASSWORD_RE (ahora valida EmpleadorCreate)
+
+# ← NUEVO: formato mínimo de correo (mismo criterio que el formulario HTML)
+EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]{2,}$")
 
 
 # ── LOGIN ─────────────────────────────────────────────────────────────────────
 
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request, next: str = "/"):
+async def login_page(request: Request, next: str = "/", reset: str = ""):   # ← NUEVO: parámetro "reset"
     user_id = request.cookies.get("user_id")
     # Si ya tiene una sesión válida (el usuario existe y sigue activo), directo a la raíz
     if user_id and db.get_active_user(user_id):
         return RedirectResponse("/")
-    return templates.TemplateResponse(request=request, name="login.html", context={"next": next})
+    # ← NUEVO: mensaje verde cuando vienen de restablecer la contraseña
+    success = "Contraseña actualizada. Ya puedes iniciar sesión." if reset == "ok" else ""
+    return templates.TemplateResponse(request=request, name="login.html",
+                                      context={"next": next, "success": success})
 
 
-# ← CAMBIO 3: "def" en vez de "async def" (el hash de la contraseña es pesado y así no congela el servidor)
+# ← CAMBIO: "def" en vez de "async def" (el hash de la contraseña es pesado y así no congela el servidor)
 @router.post("/login")
 def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form(default="/")):
+
+    # ← NUEVO: el servidor también exige que sea un correo (no solo el navegador)
+    email = email.strip()
+    if len(email) > 254 or not EMAIL_RE.match(email):
+        return templates.TemplateResponse(request=request, name="login.html",
+            context={"error": "Escribe un correo válido (nombre@dominio.com).", "next": next})
 
     # 1) ¿Es un administrador? (tabla aparte; se revisa primero)
     admin = db.verify_admin_login(email, password)
@@ -47,10 +61,10 @@ def login(request: Request, email: str = Form(...), password: str = Form(...), n
         return templates.TemplateResponse(request=request, name="login.html",
             context={"error": "Correo o contraseña incorrectos", "next": next})
 
-    # ← CAMBIO 4: evita redirecciones a otros sitios ("//sitio-malo.com" o "/\")
+    # ← CAMBIO: evita redirecciones a otros sitios ("//sitio-malo.com" o "/\")
     destino = next if (next.startswith("/") and not next.startswith("//") and "\\" not in next) else "/"
     response = RedirectResponse(destino, status_code=302)
-    # ← CAMBIO 5: cookie FIRMADA (en vez de guardar el id en texto plano)
+    # ← CAMBIO: cookie FIRMADA (en vez de guardar el id en texto plano)
     iniciar_sesion(response, user["id"])
     return response
 
@@ -63,7 +77,7 @@ async def register_page(request: Request):
 
 
 @router.post("/register")
-def register(   # ← CAMBIO 6: "def" (por el mismo motivo del hash)
+def register(   # ← CAMBIO: "def" (por el mismo motivo del hash)
     request: Request,
     name: str = Form(...), email: str = Form(...),
     password: str = Form(...), role: str = Form(...),
@@ -95,7 +109,7 @@ def register(   # ← CAMBIO 6: "def" (por el mismo motivo del hash)
     db.generar_token_verificacion(user["id"])
 
     response = RedirectResponse("/profile", status_code=302)
-    # ← CAMBIO 7: cookie firmada
+    # ← CAMBIO: cookie firmada
     iniciar_sesion(response, user["id"])
     return response
 
@@ -131,7 +145,7 @@ async def register_employer(
         "industry": industry, "size": size, "website": website
     }
 
-    # ← CAMBIO 8: se valida con EmpleadorCreate (correo corporativo, contraseña fuerte, NIT obligatorio)
+    # ← CAMBIO: se valida con EmpleadorCreate (correo corporativo, contraseña fuerte, NIT obligatorio)
     errors = []
     try:
         EmpleadorCreate(**form_data, password=password)
@@ -146,7 +160,7 @@ async def register_employer(
     doc_relpath = ""
     if document and document.filename:
         content = await document.read()
-        # ← CAMBIO 9: solo PDF/JPG/PNG y máximo 5 MB
+        # ← CAMBIO: solo PDF/JPG/PNG y máximo 5 MB
         ext = Path(document.filename).suffix.lower()
         if ext not in {".pdf", ".jpg", ".jpeg", ".png"} or len(content) > 5 * 1024 * 1024:
             return templates.TemplateResponse(request=request, name="register_employer.html",
@@ -181,9 +195,77 @@ async def register_employer(
     db.generar_token_verificacion(user["id"])
 
     response = RedirectResponse("/profile", status_code=302)
-    # ← CAMBIO 10: cookie firmada
+    # ← CAMBIO: cookie firmada
     iniciar_sesion(response, user["id"])
     return response
+
+
+# ── OLVIDÉ MI CONTRASEÑA (HTMX) ───────────────────────────────────────────────
+
+def _recuperar(request: Request, **contexto):
+    """HTMX pide solo el fragmento (el panel); una visita normal recibe la página completa."""
+    nombre = "_recuperar_panel.html" if request.headers.get("HX-Request") else "recuperar.html"
+    resp = templates.TemplateResponse(request=request, name=nombre, context=contexto)
+    resp.headers["Vary"] = "HX-Request"   # la misma URL puede devolver dos cosas: que no se mezclen en caché
+    return resp
+
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+def forgot_password_page(request: Request):
+    return _recuperar(request, modo="solicitar")
+
+
+@router.post("/forgot-password", response_class=HTMLResponse)
+def forgot_password(request: Request, email: str = Form(...)):
+    email = email.strip()
+    if len(email) > 254 or not EMAIL_RE.match(email):
+        return _recuperar(request, modo="solicitar", error="Escribe un correo válido.")
+
+    token = db.solicitar_restablecer_password(email)
+    if token:
+        # APP_URL (ej. https://tu-sitio.com) evita que un atacante falsifique el enlace del correo.
+        base = os.environ.get("APP_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
+        enlace = f"{base}/reset-password?token={token}"
+        try:
+            enviar_correo(
+                email,
+                "Restablece tu contraseña — JobWalpy",
+                "Hola,\n\nRecibimos una solicitud para restablecer tu contraseña en JobWalpy.\n"
+                f"Abre este enlace (vale 1 hora y solo se puede usar una vez):\n\n{enlace}\n\n"
+                "Si no fuiste tú, ignora este mensaje: tu contraseña no cambia.",
+            )
+        except Exception as e:
+            print(f"[CORREO] No se pudo enviar el correo de restablecimiento: {e}")
+
+    # Misma respuesta exista o no el correo (así no se puede averiguar quién está registrado).
+    return _recuperar(request, modo="enviado")
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+def reset_password_page(request: Request, token: str = ""):
+    if not token or not db.token_restablecer_valido(token):
+        return _recuperar(request, modo="invalido")
+    return _recuperar(request, modo="nueva", token=token)
+
+
+@router.post("/reset-password", response_class=HTMLResponse)
+def reset_password(request: Request, token: str = Form(...),
+                   password: str = Form(...), password2: str = Form(...)):
+    if password != password2:
+        return _recuperar(request, modo="nueva", token=token, error="Las contraseñas no coinciden.")
+    try:
+        validar_password_fuerte(password)
+    except ValueError as e:
+        return _recuperar(request, modo="nueva", token=token, error=str(e))
+
+    if not db.restablecer_password(token, password):
+        return _recuperar(request, modo="invalido")
+
+    # Con HTMX una redirección 302 metería la página de login DENTRO del panel;
+    # HX-Redirect le dice a HTMX que navegue de verdad a /login.
+    if request.headers.get("HX-Request"):
+        return Response(status_code=200, headers={"HX-Redirect": "/login?reset=ok"})
+    return RedirectResponse("/login?reset=ok", status_code=302)
 
 
 # ── LOGOUT ────────────────────────────────────────────────────────────────────

@@ -438,3 +438,23 @@ body {
   .social-networks { gap: 8px; margin: 12px 0; }
   .box-sign-in, .box-sign-up { height: 38px; }
 }
+
+/* ─── BOTÓN VER / OCULTAR CONTRASEÑA ─────────────────────────────────────── */
+.toggle-pass {
+  background: none;
+  border: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.toggle-pass:hover { color: var(--primary); }
+
+/* ─── ALERTA DE ÉXITO (verde) ────────────────────────────────────────────── */
+.server-alert.ok {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.4);
+  color: #047857;
+}

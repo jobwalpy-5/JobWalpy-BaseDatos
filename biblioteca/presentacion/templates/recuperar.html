@@ -1,0 +1,53 @@
+
+{% if error %}<div class="error-msg" role="alert">{{ error }}</div>{% endif %}
+
+{% if modo == "solicitar" %}
+  <h1>¿Olvidaste tu contraseña?</h1>
+  <p>Escribe el correo de tu cuenta y te enviaremos un enlace para crear una nueva.</p>
+  <form action="/forgot-password" method="post"
+        hx-post="/forgot-password" hx-target="#panel" hx-swap="innerHTML"
+        hx-disabled-elt="find button[type=submit]">
+    <div class="box-sign-in">
+      <ion-icon name="mail-outline"></ion-icon>
+      <input type="email" name="email" placeholder="Email" required maxlength="254"
+             pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}"
+             title="Escribe un correo válido, por ejemplo nombre@dominio.com"
+             inputmode="email" autocapitalize="off" spellcheck="false" />
+    </div>
+    <button type="submit" class="btn-main">Enviar enlace</button>
+  </form>
+
+{% elif modo == "enviado" %}
+  <h1>Revisa tu correo</h1>
+  <p>Si ese correo está registrado, te enviamos un enlace para restablecer tu contraseña.
+     El enlace dura 1 hora y solo se puede usar una vez.</p>
+
+{% elif modo == "nueva" %}
+  <h1>Nueva contraseña</h1>
+  <p>Mínimo 8 caracteres, una mayúscula, un número y un carácter especial.</p>
+  <form action="/reset-password" method="post"
+        hx-post="/reset-password" hx-target="#panel" hx-swap="innerHTML"
+        hx-disabled-elt="find button[type=submit]">
+    <input type="hidden" name="token" value="{{ token }}" />
+    <div class="box-sign-in">
+      <ion-icon name="lock-closed-outline"></ion-icon>
+      <input type="password" id="pw1" name="password" placeholder="Nueva contraseña" required autocomplete="new-password" />
+      <button type="button" class="toggle-pass" data-target="pw1" aria-label="Mostrar contraseña" aria-pressed="false">
+        <ion-icon name="eye-outline"></ion-icon>
+      </button>
+    </div>
+    <div class="box-sign-in">
+      <ion-icon name="lock-closed-outline"></ion-icon>
+      <input type="password" id="pw2" name="password2" placeholder="Repite la contraseña" required autocomplete="new-password" />
+      <button type="button" class="toggle-pass" data-target="pw2" aria-label="Mostrar contraseña" aria-pressed="false">
+        <ion-icon name="eye-outline"></ion-icon>
+      </button>
+    </div>
+    <button type="submit" class="btn-main">Guardar contraseña</button>
+  </form>
+
+{% else %}
+  <h1>Enlace no válido</h1>
+  <p>Este enlace ya se usó o venció. Pide uno nuevo.</p>
+  <a href="/forgot-password" class="volver">Pedir un enlace nuevo</a>
+{% endif %}

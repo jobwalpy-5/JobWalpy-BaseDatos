@@ -22,6 +22,9 @@
   {% if error %}
   <div class="server-alert">{{ error }}</div>
   {% endif %}
+  {% if success %}
+  <div class="server-alert ok">{{ success }}</div>
+  {% endif %}
 
   <div class="container {% if show_register %}toggle{% endif %}" id="container">
 
@@ -39,15 +42,24 @@
 
         <div class="box-sign-in">
           <ion-icon name="mail-outline"></ion-icon>
-          <input type="email" name="email" placeholder="Email" required autocomplete="email" />
+          <input type="email" name="email" placeholder="Email" required maxlength="254"
+                 pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}"
+                 title="Escribe un correo válido, por ejemplo nombre@dominio.com"
+                 inputmode="email" autocapitalize="off" spellcheck="false"
+                 autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" />
         </div>
 
         <div class="box-sign-in">
           <ion-icon name="lock-closed-outline"></ion-icon>
-          <input type="password" name="password" placeholder="Contraseña" required autocomplete="current-password" />
+          <input type="password" id="login-password" name="password" placeholder="Contraseña" required
+                 autocomplete="off" readonly onfocus="this.removeAttribute('readonly')" />
+          <button type="button" class="toggle-pass" data-target="login-password"
+                  aria-label="Mostrar contraseña" aria-pressed="false">
+            <ion-icon name="eye-outline"></ion-icon>
+          </button>
         </div>
 
-        <a href="#">¿Olvidaste tu contraseña?</a>
+        <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
 
         <button class="incognito" type="button" onclick="window.location.href='/jobs'">
           <ion-icon name="search-outline"></ion-icon>
@@ -95,7 +107,11 @@
           </div>
           <div class="box-sign-up">
             <ion-icon name="lock-closed-outline"></ion-icon>
-            <input type="password" name="password" placeholder="Contraseña (mín. 8 car., mayúscula, número, especial)" required />
+            <input type="password" id="register-password" name="password" placeholder="Contraseña (mín. 8 car., mayúscula, número, especial)" required />
+            <button type="button" class="toggle-pass" data-target="register-password"
+                    aria-label="Mostrar contraseña" aria-pressed="false">
+              <ion-icon name="eye-outline"></ion-icon>
+            </button>
           </div>
           <div class="box-sign-up">
             <ion-icon name="location-outline"></ion-icon>
@@ -158,6 +174,18 @@
 
   <script src="/static/js/auth.js"></script>
   <script>
+    // Mostrar / ocultar contraseña
+    document.querySelectorAll('.toggle-pass').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const mostrar = input.type === 'password';
+        input.type = mostrar ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', String(mostrar));
+        btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        btn.querySelector('ion-icon').setAttribute('name', mostrar ? 'eye-off-outline' : 'eye-outline');
+      });
+    });
+
     function selectRole(role) {
       document.getElementById('btn-buscador').classList.toggle('active', role === 'buscador');
       document.getElementById('btn-empleador').classList.toggle('active', role === 'empleador');

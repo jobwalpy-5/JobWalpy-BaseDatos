@@ -1,6 +1,4 @@
 """
-
-
 Reglas de este archivo:
   • Solo habla con la base de datos: SELECT / INSERT / UPDATE / DELETE.
   • No decide nada del negocio (no hashea contraseñas, no revisa si un token
@@ -10,8 +8,9 @@ Reglas de este archivo:
     ("name", "role", "job_id"...), así que los routers y las plantillas
     no tienen que cambiar.
 """
+"from datetime import date, datetime, timedelta")
+import hashlib
 import json
-
 import psycopg
 
 from dominio.errores import (
@@ -693,3 +692,64 @@ def admin_alternar_activo_empleo(job_id: str) -> bool:
 def admin_borrar_empleo(job_id: str) -> bool:
     with get_conn() as conn:
         return conn.execute("DELETE FROM empleos WHERE id = %s", (job_id,)).rowcount > 0
+
+    
+
+# ── RESTABLECER CONTRASEÑA ────────────────────────────────────────────────────
+
+def guardar_token_restablecer(token_hash: str, user_id: str, creado_at: str, expira_at: str) -> None:
+    with get_conn() as conn:
+        # Solo el último enlace pedido es válido: se borran los anteriores de esa persona.
+        conn.execute("DELETE FROM tokens_restablecer WHERE usuario_id = %s", (str(user_id),))
+        conn.execute(
+            "INSERT INTO tokens_restablecer (token_hash, usuario_id, creado_at, expira_at) "
+            "VALUES (%s, %s, %s, %s)",
+            (token_hash, str(user_id), creado_at, expira_at),
+        )
+
+
+def obtener_token_restablecer(token_hash: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT usuario_id, expira_at FROM tokens_restablecer WHERE token_hash = %s",
+            (token_hash,),
+        ).fetchone()
+
+
+def aplicar_restablecer_password(user_id: str, password_hash: str) -> None:
+    """Cambia la contraseña y borra los enlaces de esa persona, en una sola transacción."""
+    with get_conn() as conn:
+        conn.execute("UPDATE usuarios SET password_hash = %s WHERE id = %s", (password_hash, str(user_id)))
+        conn.execute("DELETE FROM tokens_restablecer WHERE usuario_id = %s", (str(user_id),))
+# ── RESTABLECER CONTRASEÑA ────────────────────────────────────────────────────
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def solicitar_restablecer_password(email: str, horas_validez: int = 1) -> str | None:
+    """
+    Si el correo pertenece a una cuenta activa, crea un enlace de un solo uso y devuelve el token.
+    Si no existe, devuelve None (la ruta responde igual en ambos casos para no revelar qué correos existen).
+    """
+    cred = repo.obtener_credenciales(_normalizar_email(email))
+    if not cred or not cred["activo"]:
+        return None
+    token = new_token()
+    ahora = datetime.utcnow()
+    expira = ahora + timedelta(hours=horas_validez)
+    repo.guardar_token_restablecer(_hash_token(token), cred["id"], ahora.isoformat(), expira.isoformat())
+    return token
+
+
+def token_restablecer_valido(token: str) -> bool:
+    fila = repo.obtener_token_restablecer(_hash_token(token))
+    return bool(fila) and datetime.fromisoformat(fila["expira_at"]) >= datetime.utcnow()
+
+
+def restablecer_password(token: str, nueva_password: str) -> bool:
+    fila = repo.obtener_token_restablecer(_hash_token(token))
+    if not fila or datetime.fromisoformat(fila["expira_at"]) < datetime.utcnow():
+        return False
+    repo.aplicar_restablecer_password(fila["usuario_id"], hash_password(nueva_password))
+    return True
