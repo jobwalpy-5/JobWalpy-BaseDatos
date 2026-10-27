@@ -1,6 +1,4 @@
 """
-
-
 Las rutas (presentacion/rutas/) llaman SOLO a este archivo.
 Este archivo llama SOLO a repositorios.py para tocar la base de datos.
 Regla de oro: aquí no debe aparecer ni un SELECT ni un import de psycopg.
@@ -8,8 +6,9 @@ Regla de oro: aquí no debe aparecer ni un SELECT ni un import de psycopg.
 Los nombres de las funciones públicas son los mismos que tenía database.py,
 así que en las rutas solo cambia la línea del import.
 """
+import hashlib
 from datetime import date, datetime, timedelta
-from zoneinfo import ZoneInfo
+
 from dominio import datos_demo
 from dominio import repositorios as repo
 from dominio.errores import (  # noqa: F401  (se re-exportan para que las rutas los importen desde aquí)

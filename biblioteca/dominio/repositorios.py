@@ -1,16 +1,11 @@
 """
 Reglas de este archivo:
-  • Solo habla con la base de datos: SELECT / INSERT / UPDATE / DELETE.
-  • No decide nada del negocio (no hashea contraseñas, no revisa si un token
-    expiró, no inventa ids). Eso vive en servicios.py, que le pasa todo ya
-    resuelto.
-  • Devuelve diccionarios con las mismas llaves que la app ya usaba
-    ("name", "role", "job_id"...), así que los routers y las plantillas
+  — Solo habla con la base de datos: SELECT / INSERT / UPDATE / DELETE.
+  ...
     no tienen que cambiar.
 """
-"from datetime import date, datetime, timedelta")
-import hashlib
 import json
+
 import psycopg
 
 from dominio.errores import (
