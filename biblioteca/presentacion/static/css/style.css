@@ -76,6 +76,39 @@ img { max-width: 100%; display: block; }
   justify-content: space-between;
   gap: 24px;
 }
+/* ─── LOGO OFICIAL JOBWALPY ─── */
+.nav-logo .brand-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.nav-logo .logo-text {
+  white-space: nowrap;
+}
+
+.nav-logo:focus-visible 
+{
+  
+   outline: 2px solid var(--primary-light);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* Logo del pie de página */
+.footer-logo {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.footer-brand-logo {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
 
 .nav-logo {
   display: flex;
