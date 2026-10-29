@@ -1,0 +1,12 @@
+<div class="admin-count">{{ empresas|length }} empresa(s) encontrada(s)</div>
+<div class="admin-table-card">
+  <table class="admin-table">
+    <thead><tr><th>Empresa</th><th>NIT / Tax ID</th><th>Contacto</th><th>Industria</th><th>Documento</th><th>Estado</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for e in empresas %}{% include "_admin_empresa_fila.html" %}
+      {% else %}
+      <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text-muted);">No hay empresas con estos filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

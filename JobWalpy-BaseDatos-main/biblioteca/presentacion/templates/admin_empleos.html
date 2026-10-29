@@ -1,0 +1,20 @@
+{% extends "admin_base.html" %}
+{% block titulo %}Empleos{% endblock %}
+{% block contenido %}
+<div class="admin-topbar">
+  <div>
+    <h1 class="admin-page-title">Gestión de Empleos</h1>
+    <p class="admin-page-sub">La búsqueda se aplica mientras escribes</p>
+  </div>
+</div>
+<div class="admin-content">
+  <form method="get" action="/admin/empleos" class="admin-filter-bar"
+        hx-get="/admin/empleos" hx-target="#resultado" hx-push-url="true"
+        hx-trigger="input changed delay:300ms" hx-indicator="#resultado">
+    <input type="text" name="search" value="{{ search }}" placeholder="Buscar por título o empresa…" class="admin-filter-input" autocomplete="off"/>
+    <noscript><button type="submit" class="btn btn-primary btn-sm">Buscar</button></noscript>
+    <a href="/admin/empleos" class="btn btn-outline btn-sm">Limpiar</a>
+  </form>
+  <div id="resultado">{% include "_admin_empleos_lista.html" %}</div>
+</div>
+{% endblock %}
