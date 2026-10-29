@@ -152,6 +152,47 @@ body {
   font-size: 14px;
   color: var(--text);
 }
+/* ─── SELECT DE CIUDAD ──────── */
+.box-sign-up select {
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  min-width: 0;                 
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  font-family: var(--font);
+  font-size: 14px;
+  color: #757575;               
+  cursor: pointer;
+  padding-right: 20px;          
+  text-overflow: ellipsis;
+
+  /* flecha personalizada */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0 center;
+}
+
+/* cuando ya eligieron una ciudad, texto en color normal */
+.box-sign-up select:has(option:checked:not([value=""])) {
+  color: var(--text);
+}
+
+/* opciones de la lista desplegable */
+.box-sign-up select option {
+  color: var(--text);
+  background: #fff;
+}
+
+/* los iconos nunca se encogen */
+.box-sign-in ion-icon,
+.box-sign-up ion-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+}
 
 /* ─── LINK CONTRASEÑA ────────────────────────────────────────────────────── */
 .container-form a {
