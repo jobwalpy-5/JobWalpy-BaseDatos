@@ -113,16 +113,26 @@
               <ion-icon name="eye-outline"></ion-icon>
             </button>
           </div>
-          <div class="box-sign-up">
-            <ion-icon name="location-outline"></ion-icon>
-            <input type="text" name="location" placeholder="Ciudad (opcional)" />
-          </div>
-          <div class="button-wrap">
+         <div class="button-wrap">
             <button type="submit">Crear cuenta</button>
           </div>
         </form>
 
-        <!-- Panel empleador: redirige al formulario completo -->
+<div class="box-sign-up">
+    <ion-icon name="location-outline"></ion-icon>
+    <select name="location">
+        <option value="">Seleccione una ciudad (opcional)</option>
+        <option value="Medellín">Medellín</option>
+        <option value="Bogotá">Bogotá</option>
+        <option value="Cali">Cali</option>
+        <option value="Barranquilla">Barranquilla</option>
+        <option value="Cartagena">Cartagena</option>
+        <option value="Quibdó">Quibdó</option>
+        <option value="Bucaramanga">Bucaramanga</option>
+        <option value="Pereira">Pereira</option>
+    </select>
+</div>
+          <!-- Panel empleador: redirige al formulario completo -->
         <div id="panel-empleador" class="role-form" style="display:none; text-align:center; padding: 16px 0;">
           <p style="font-size:14px;color:#444e5e;margin-bottom:20px;line-height:1.6;">
             Para publicar empleos necesitamos verificar tu empresa.<br/>
