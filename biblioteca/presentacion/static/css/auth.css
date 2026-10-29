@@ -41,8 +41,22 @@ body {
   text-decoration: none;
   z-index: 999;
 }
+@media (max-width: 600px) {
+  .floating-logo {
+    top: 14px;
+    left: 16px;
+    gap: 8px;
+  }
 
+  .floating-logo .brand-logo {
+    width: 42px;
+    height: 42px;
+  }
 
+  .floating-logo .logo-text {
+    font-size: 1rem;
+  }
+}
 /* ─── IMAGEN DEL LOGO EN AUTENTICACIÓN ─── */
 .floating-logo .brand-logo {
   width: 52px;
