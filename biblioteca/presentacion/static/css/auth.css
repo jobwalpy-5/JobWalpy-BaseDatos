@@ -42,14 +42,34 @@ body {
   z-index: 999;
 }
 
-.logo-box {
-    width: 70px;      
-    height: auto;      
-    display: block;  
-    margin: 10px;     
-    border-radius: 6px; 
+
+/* ─── IMAGEN DEL LOGO EN AUTENTICACIÓN ─── */
+.floating-logo .brand-logo {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  margin: 0;
 }
 
+.floating-logo .logo-text {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--primary);
+  white-space: nowrap;
+}
+
+.floating-logo:hover {
+  opacity: 0.85;
+}
+
+.floating-logo:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
 
 .logo-text {
   font-family: var(--font-display);
