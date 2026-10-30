@@ -250,7 +250,7 @@ async def delete_account(request: Request):
 async def forgot_password_page(request: Request):
     return templates.TemplateResponse(
         request=request,
-        name="recuperar.html",
+        name="recuperar_pagina.html",
         context={"modo": "solicitar"}
     )
 
@@ -297,13 +297,13 @@ async def reset_password_page(request: Request, token: str = ""):
     if not token or not db.token_restablecer_valido(token):
         return templates.TemplateResponse(
             request=request,
-            name="recuperar.html",
+            name="recuperar_pagina.html",
             context={"modo": "invalido"}
         )
 
     return templates.TemplateResponse(
         request=request,
-        name="recuperar.html",
+        name="recuperar_pagina.html",
         context={"modo": "nueva", "token": token}
     )
 

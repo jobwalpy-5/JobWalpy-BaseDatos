@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recuperar contraseña — JobWalpy</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=REM:wght@400;500;600;700;800&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/css/auth.css">
+
+    <style>
+        .recovery-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 100px 20px 40px;
+            box-sizing: border-box;
+        }
+
+        .recovery-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 40px;
+            box-sizing: border-box;
+            background: white;
+            border-radius: 22px;
+            box-shadow: 0 12px 45px rgba(1, 47, 94, .12);
+            text-align: center;
+            font-family: 'REM', sans-serif;
+        }
+
+        .recovery-card h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 27px;
+            color: #012f5e;
+            margin-bottom: 14px;
+        }
+
+        .recovery-card p {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 24px;
+        }
+
+        .recovery-card .box-sign-in {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            border: 1px solid #d5dce5;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            background: #fff;
+        }
+
+        .recovery-card .box-sign-in input {
+            flex: 1;
+            min-width: 0;
+            width: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            font: inherit;
+            font-size: 14px;
+            color: #26364a;
+        }
+
+        .recovery-card .box-sign-in ion-icon {
+            color: #64748b;
+            font-size: 20px;
+        }
+
+        .recovery-card .btn-main {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #012f5e, #0a4a8a);
+            color: white;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .recovery-card .btn-main:hover {
+            opacity: .9;
+        }
+
+        .recovery-card .error-msg {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 13px;
+        }
+
+        .recovery-card .volver {
+            display: inline-block;
+            margin-top: 15px;
+            color: #0a4a8a;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .recovery-card .volver:hover {
+            text-decoration: underline;
+        }
+
+        .recovery-logo {
+            position: absolute;
+            top: 25px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: #012f5e;
+            font-family: 'Syne', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+        }
+
+        .recovery-logo img {
+            width: 42px;
+            height: 42px;
+            object-fit: contain;
+        }
+
+        @media (max-width: 480px) {
+            .recovery-card {
+                padding: 28px 20px;
+            }
+
+            .recovery-logo {
+                left: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <a href="/" class="recovery-logo">
+        <img src="/static/img/logo.png" alt="JobWalpy">
+        <span>JobWalpy</span>
+    </a>
+
+    <main class="recovery-page">
+        <section class="recovery-card" id="panel">
+            {% include "recuperar.html" %}
+        </section>
+    </main>
+
+    <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+    <script src="/static/js/theme.js"></script>
+
+    <script>
+        document.addEventListener('click', function(event) {
+            const button = event.target.closest('.toggle-pass');
+            if (!button) return;
+
+            const input = document.getElementById(button.dataset.target);
+            if (!input) return;
+
+            const showing = input.type === 'password';
+            input.type = showing ? 'text' : 'password';
+
+            button.setAttribute('aria-pressed', String(showing));
+            button.setAttribute(
+                'aria-label',
+                showing ? 'Ocultar contraseña' : 'Mostrar contraseña'
+            );
+
+            const icon = button.querySelector('ion-icon');
+            if (icon) {
+                icon.setAttribute(
+                    'name',
+                    showing ? 'eye-off-outline' : 'eye-outline'
+                );
+            }
+        });
+    </script>
+
+</body>
+</html>
