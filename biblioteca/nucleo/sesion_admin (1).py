@@ -15,9 +15,10 @@ DURACION_SEGUNDOS = 8 * 60 * 60  # la sesión de admin dura 8 horas
 
 
 def _secreto() -> bytes:
-    base = os.environ.get("SECRET_KEY")
+    
+    base = os.environ.get("SECRET_KEY") or os.environ.get("DATABASE_URL") or ""
     if not base:
-        raise RuntimeError("Falta la variable de entorno SECRET_KEY para firmar la sesión de admin.")
+        raise RuntimeError("No hay SECRET_KEY ni DATABASE_URL para firmar la sesión de admin.")
     return ("jobwalpy-admin:" + base).encode()
 
 

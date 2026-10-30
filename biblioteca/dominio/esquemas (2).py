@@ -1,11 +1,10 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, field_validator
 from typing import Optional
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import date
 import re
 
 
-# ── REGLAS COMPARTIDAS ────────────────────────────────────────────────────
+# ── REGLAS COMPARTIDAS ──────────────────────────────────────────────────────
 # Dominios de correo "personales" que NO aceptamos para cuentas de EMPRESA.
 # Un buscador de empleo sí puede usar gmail/hotmail sin problema; una empresa
 # debe registrarse con un correo de su propio dominio (contacto@tuempresa.com)
@@ -22,50 +21,21 @@ def validar_password_fuerte(v: str) -> str:
         raise ValueError("La contraseña debe tener al menos una mayúscula.")
     if not re.search(r"\d", v):
         raise ValueError("La contraseña debe tener al menos un número.")
-    if len(v) > 128:
-        raise ValueError("La contraseña no puede superar 128 caracteres.")
-    if not re.search(r"[^A-Za-z0-9\s]", v):
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>_\-]", v):
         raise ValueError("La contraseña debe tener al menos un carácter especial.")
     return v
 
 
-# ── REGISTRO: BUSCADOR DE EMPLEO ───────────────────────────────────────────
+# ── REGISTRO: BUSCADOR DE EMPLEO ────────────────────────────────────────────
 
 class BuscadorCreate(BaseModel):
     """Registro de una persona que busca empleo."""
-    first_name: str = Field(min_length=1, max_length=60)
-    last_name: str = Field(min_length=1, max_length=60)
+    name: str
     email: EmailStr
-    password: str = Field(min_length=8, max_length=128)
-    document_type: str
-    document_number: str = Field(min_length=5, max_length=20)
-    phone: Optional[str] = Field(default="", max_length=30)
-    location: Optional[str] = Field(default="", max_length=100)
-    bio: Optional[str] = Field(default="", max_length=1000)
-
-    @field_validator("first_name", "last_name")
-    @classmethod
-    def validate_person_name(cls, v: str) -> str:
-        v = " ".join(v.split())
-        if not v or not re.fullmatch(r"[A-Za-zÀ-ÿ'’ -]+", v, flags=re.UNICODE):
-            raise ValueError("Usa solo letras, espacios, apóstrofes o guiones en nombres y apellidos.")
-        return v
-
-    @field_validator("document_type")
-    @classmethod
-    def validate_document_type(cls, v: str) -> str:
-        v = v.strip().upper()
-        if v not in {"CC", "CE", "PPT", "PASAPORTE"}:
-            raise ValueError("Selecciona un tipo de documento válido.")
-        return v
-
-    @field_validator("document_number")
-    @classmethod
-    def normalize_document_number(cls, v: str) -> str:
-        v = re.sub(r"[ .-]", "", v.strip()).upper()
-        if not re.fullmatch(r"[A-Z0-9]{5,20}", v):
-            raise ValueError("El documento debe tener entre 5 y 20 caracteres alfanuméricos.")
-        return v
+    password: str
+    phone: Optional[str] = ""
+    location: Optional[str] = ""
+    bio: Optional[str] = ""
 
     @field_validator("password")
     @classmethod
@@ -73,24 +43,25 @@ class BuscadorCreate(BaseModel):
         return validar_password_fuerte(v)
 
 
-# ── REGISTRO: EMPLEADOR (EMPRESA) ──────────────────────────────────────────
+# ── REGISTRO: EMPLEADOR (EMPRESA) ───────────────────────────────────────────
 
 class EmpleadorCreate(BaseModel):
     """Registro completo de empleador — datos de contacto + datos legales de la empresa."""
     # Datos del contacto humano que administra la cuenta
-    contact_name: str = Field(min_length=2, max_length=100)
+    contact_name: str
     email: EmailStr
     password: str
-    phone: str = Field(min_length=7, max_length=30)
+    phone: str
 
     # Datos legales de la empresa (esto es lo que la hace "verificable" como real)
-    company_name: str = Field(min_length=2, max_length=120)  # Nombre comercial legal_name: str = Field(min_length=2, max_length=160)    # Razón social
-    tax_id: str = Field(min_length=5, max_length=30)         # NIT / RFC / RUT — único
-    website: Optional[str] = Field(default="", max_length=300)
-    address: str = Field(min_length=3, max_length=200)
-    industry: str = Field(min_length=2, max_length=80)
-    size: Optional[str] = Field(default="", max_length=40)
-    location: str = Field(min_length=2, max_length=100)
+    company_name: str          # Nombre comercial
+    legal_name: str            # Razón social
+    tax_id: str                # NIT / RFC / RUT — debe ser único en el sistema
+    website: Optional[str] = ""
+    address: str
+    industry: str
+    size: Optional[str] = ""
+    location: str
 
     @field_validator("email")
     @classmethod
@@ -116,14 +87,14 @@ class EmpleadorCreate(BaseModel):
         return v.strip()
 
 
-# ── LOGIN ──────────────────────────────────────────────────────────────────
+# ── LOGIN ────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
 
-# ── ACTUALIZAR PERFIL ──────────────────────────────────────────────────────
+# ── ACTUALIZAR PERFIL ────────────────────────────────────────────────────────
 
 class BuscadorUpdate(BaseModel):
     name: Optional[str] = None
@@ -161,7 +132,7 @@ class UserOut(BaseModel):
     verified: bool = False           # correo verificado (todos los roles)
     verified_company: bool = False   # solo aplica a empleadores (revisión legal)
     # Campos de buscador (vacíos si el usuario es empleador)
-    skills: list[str] = Field(default_factory=list)
+    skills: list[str] = []
     experience: Optional[str] = ""
     education: Optional[str] = ""
     # Campos de empleador (vacíos si el usuario es buscador)
@@ -170,7 +141,7 @@ class UserOut(BaseModel):
     size: Optional[str] = ""
 
 
-# ── JOB MODELS ──────────────────────────────────────────────────────────────
+# ── JOB MODELS ────────────────────────────────────────────────────────────────
 
 class JobBase(BaseModel):
     title: str
@@ -194,14 +165,14 @@ class JobOut(JobBase):
     active: bool = True
 
 
-# ── APPLICATION MODELS ──────────────────────────────────────────────────────
+# ── APPLICATION MODELS ────────────────────────────────────────────────────────
 
 class ApplicationCreate(BaseModel):
     job_id: str
     user_id: str
     cover_letter: Optional[str] = ""
     status: str = "pendiente"
-    applied_at: str = Field(default_factory=lambda: datetime.now(ZoneInfo("America/Bogota")).date().isoformat())
+    applied_at: str = str(date.today())
 
 
 class ApplicationOut(ApplicationCreate):
@@ -209,4 +180,4 @@ class ApplicationOut(ApplicationCreate):
 
 
 class ApplicationStatusUpdate(BaseModel):
-    status: str = Field(pattern=r"^(pendiente|aceptado|rechazado)$")
+    status: str

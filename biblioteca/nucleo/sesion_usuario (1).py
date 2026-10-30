@@ -24,9 +24,9 @@ DURACION_SEGUNDOS = 30 * 24 * 60 * 60  # 30 días, igual que antes
 
 def _secreto() -> bytes:
     # Prefijo distinto al del admin: una cookie de usuario NUNCA sirve como cookie de admin.
-    base = os.environ.get("SECRET_KEY")
+    base = os.environ.get("SECRET_KEY") or os.environ.get("DATABASE_URL") or ""
     if not base:
-        raise RuntimeError("Falta la variable de entorno SECRET_KEY para firmar la sesión.")
+        raise RuntimeError("No hay SECRET_KEY ni DATABASE_URL para firmar la sesión.")
     return ("jobwalpy-usuario:" + base).encode()
 
 
@@ -59,8 +59,7 @@ def iniciar_sesion(response, user_id: str) -> None:
     """Deja la cookie firmada en la respuesta (la usan login y registros)."""
     response.set_cookie(
         key=NOMBRE_COOKIE, value=firmar(str(user_id)), max_age=DURACION_SEGUNDOS,
-       httponly=True, samesite="lax", path="/",
-        secure=os.environ.get("COOKIE_SECURE", "0" if os.environ.get("ENVIRONMENT") == "development" else "1") == "1",
+        httponly=True, samesite="lax", path="/",
     )
 
 

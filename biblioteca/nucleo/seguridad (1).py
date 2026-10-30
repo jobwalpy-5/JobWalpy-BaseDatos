@@ -17,10 +17,10 @@ import hmac
 import secrets
 import uuid
 
-# Los hashes nuevos usan 600.000 iteraciones. Se conserva la verificación de hashes
-# antiguos (260.000) para no bloquear a usuarios existentes tras el despliegue.
-PBKDF2_ITERATIONS = 600_000
-LEGACY_PBKDF2_ITERATIONS = 260_000
+# 260,000 iteraciones es la recomendación de OWASP (2023+) para
+# PBKDF2-HMAC-SHA256. Más iteraciones = más lento de "romper" por
+# fuerza bruta, pero sigue siendo rápido para un solo login real.
+PBKDF2_ITERATIONS = 260_000
 
 
 def hash_password(password: str) -> str:
@@ -41,17 +41,13 @@ def verify_password(password: str, stored_hash: str) -> bool:
     except (ValueError, AttributeError):
         return False
 
-    password_bytes = password.encode("utf-8")
-    salt_bytes = salt.encode("utf-8")
     new_hash = hashlib.pbkdf2_hmac(
-        "sha256", password_bytes, salt_bytes, PBKDF2_ITERATIONS
+        "sha256",
+        password.encode("utf-8"),
+        salt.encode("utf-8"),
+        PBKDF2_ITERATIONS,
     ).hex()
-    if hmac.compare_digest(new_hash, pwd_hash):
-        return True
-    legacy_hash = hashlib.pbkdf2_hmac(
-        "sha256", password_bytes, salt_bytes, LEGACY_PBKDF2_ITERATIONS
-    ).hex()
-    return hmac.compare_digest(legacy_hash, pwd_hash)
+    return hmac.compare_digest(new_hash, pwd_hash)
 
 
 def new_id() -> str:

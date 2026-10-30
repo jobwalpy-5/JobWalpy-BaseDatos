@@ -17,7 +17,3 @@ class TaxIdYaRegistradoError(Exception):
 
 class YaAplicasteError(Exception):
     """Se lanza si la misma persona intenta aplicar dos veces al mismo empleo."""
-
-
-class DocumentoYaRegistradoError(Exception):
-    """Se lanza cuando el documento de identidad ya pertenece a una cuenta."""

@@ -5,9 +5,8 @@ from presentacion.plantillas import templates
 
 router = APIRouter()
 
-ESTADOS_VALIDOS = {"pendiente", "aceptado", "rechazado"}
 
-# ── VER APLICACIONES RECIBIDAS (empleador) ───────────────────────────────────
+# ── VER APLICACIONES RECIBIDAS (empleador) ────────────────────────────────────
 # NOTA: esta ruta no existía en la versión anterior — sin ella, applications.html
 # era inalcanzable (nada apuntaba a /applications). La agrego para que el botón
 # "Ver candidatos" / flujo del empleador funcione de verdad.
@@ -19,21 +18,8 @@ async def applications_page(request: Request):
         return RedirectResponse("/login?next=/applications", status_code=302)
 
     user = db.get_active_user(user_id)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-    if user.get("role") == "buscador":
-        applications = []
-        for app in db.get_applications_by_user(user_id):
-            job = db.get_job(app["job_id"])
-            if job:
-                applications.append({**app, "job": job})
-        return templates.TemplateResponse(request=request, name="applications_seeker.html", context={
-            "user": user, "applications": applications, "total": len(applications)
-        })
-    if user.get("role") != "empleador":
+    if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
-    if not user.get("verified_company"):
-        return RedirectResponse("/profile?error=empresa_pendiente", status_code=302)
 
     my_job_ids = {j["id"] for j in db.get_jobs() if str(j.get("posted_by")) == str(user_id)}
     enriched = []
@@ -53,7 +39,7 @@ async def applications_page(request: Request):
     })
 
 
-# ── CAMBIAR ESTADO DE UNA APLICACIÓN (empleador) ─────────────────────────────
+# ── CAMBIAR ESTADO DE UNA APLICACIÓN (empleador) ──────────────────────────────
 @router.post("/applications/{application_id}/status")
 async def update_status(
     application_id: str,
@@ -67,13 +53,6 @@ async def update_status(
     user = db.get_active_user(user_id)
     if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
-    if not user.get("verified_company"):
-        return RedirectResponse("/profile?error=empresa_pendiente", status_code=302)
-
-    if status not in ESTADOS_VALIDOS:
-        return RedirectResponse("/applications", status_code=302)
-
-
 
     application = db.get_application(application_id)
     if not application:

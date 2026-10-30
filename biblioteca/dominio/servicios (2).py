@@ -1,4 +1,6 @@
 """
+
+
 Las rutas (presentacion/rutas/) llaman SOLO a este archivo.
 Este archivo llama SOLO a repositorios.py para tocar la base de datos.
 Regla de oro: aquí no debe aparecer ni un SELECT ni un import de psycopg.
@@ -6,9 +8,7 @@ Regla de oro: aquí no debe aparecer ni un SELECT ni un import de psycopg.
 Los nombres de las funciones públicas son los mismos que tenía database.py,
 así que en las rutas solo cambia la línea del import.
 """
-import hashlib
-from datetime import datetime, timedelta
-from zoneinfo import ZoneInfo
+from datetime import date, datetime, timedelta
 
 from dominio import datos_demo
 from dominio import repositorios as repo
@@ -16,16 +16,15 @@ from dominio.errores import (  # noqa: F401  (se re-exportan para que las rutas 
     EmailYaRegistradoError,
     TaxIdYaRegistradoError,
     YaAplicasteError,
-    DocumentoYaRegistradoError,
 )
 from nucleo.seguridad import hash_password, new_id, new_token, verify_password
 
 AVATAR_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"]
 
 
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # USUARIOS
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _avatar_para(nombre: str, indice: int) -> tuple[str, str]:
     iniciales = "".join(p[0] for p in nombre.split()[:2]).upper() or "??"
@@ -40,11 +39,6 @@ def _normalizar_email(email: str) -> str:
 def get_users() -> list:
     return repo.listar_usuarios_activos()
 
-def contar_usuarios_activos() -> int:
-    return repo.contar_usuarios_activos()
-
-def contar_buscadores_activos() -> int:
-    return repo.contar_buscadores_activos()
 
 def get_user(user_id: str) -> dict | None:
     """
@@ -75,19 +69,12 @@ def create_buscador(data: dict) -> dict:
     email = _normalizar_email(data["email"])
     if repo.existe_email(email):
         raise EmailYaRegistradoError(f"El correo {data['email']} ya está registrado.")
-    if data.get("document_type") and data.get("document_number") and repo.existe_documento(
-        data["document_type"], data["document_number"]
-    ):
-        raise DocumentoYaRegistradoError("Este documento ya está asociado a una cuenta.")
-    data = {
-        **data,
-        "name": data.get("name") or f"{data.get('first_name', '')} {data.get('last_name', '')}".strip(),
-    }
-    avatar, color = _avatar_para(data["name"], repo.contar_usuarios_activos())
+
+    avatar, color = _avatar_para(data["name"], repo.contar_usuarios())
     uid = new_id()
     repo.insertar_buscador(
         uid=uid, email=email, password_hash=hash_password(data["password"]),
-        verificado=False,fecha_registro=datetime.now(ZoneInfo("America/Bogota")).date().isoformat(),
+        verificado=False, fecha_registro=str(date.today()),
         data=data, avatar=avatar, color=color,
     )
     return get_user(uid)
@@ -106,7 +93,7 @@ def create_empleador(data: dict) -> dict:
     uid = new_id()
     repo.insertar_empleador(
         uid=uid, email=email, password_hash=hash_password(data["password"]),
-        verificado=False, verificado_legal=False, fecha_registro=datetime.now(ZoneInfo("America/Bogota")).date().isoformat(),
+        verificado=False, verificado_legal=False, fecha_registro=str(date.today()),
         data=data, avatar=avatar, color=color,
     )
     return get_user(uid)
@@ -162,9 +149,9 @@ def delete_user(user_id: str) -> bool:
     return repo.desactivar_usuario(user_id)
 
 
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # EMPLEOS
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def get_jobs() -> list:
     return repo.listar_empleos()
@@ -186,13 +173,16 @@ def create_job(job: dict) -> dict:
 
 
 def delete_job(job_id: str) -> bool:
-    # Compatibilidad: cerrar la oferta preserva las postulaciones históricas.
-    return repo.admin_borrar_empleo(job_id)
+    """
+    Borra el empleo de verdad (no es borrado suave como en usuarios). Por el
+    ON DELETE CASCADE del esquema, también se borran las aplicaciones de ese empleo.
+    """
+    return repo.borrar_empleo(job_id)
 
 
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # APLICACIONES
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def get_applications() -> list:
     return repo.listar_aplicaciones()
@@ -223,9 +213,9 @@ def update_application_status(app_id: str, status: str) -> dict | None:
     return repo.actualizar_estado_aplicacion(app_id, status)
 
 
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # CONVERSACIONES Y MENSAJES
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _armar_mensaje(m: dict, remitentes: dict) -> dict:
     """
@@ -279,7 +269,7 @@ def get_or_create_conversation(user1_id: str, user2_id: str, aplicacion_id: int 
 
 
 def add_message_to_conversation(conv_id: str, sender_id: str, text: str) -> dict | None:
-    ahora = datetime.now(ZoneInfo("America/Bogota"))
+    ahora = datetime.utcnow()
     fila = repo.insertar_mensaje(conv_id, sender_id, text, ahora.strftime("%H:%M"), ahora.isoformat())
     return _armar_mensaje(fila, {})
 
@@ -302,9 +292,9 @@ def is_participant(conv_id: str, user_id: str) -> bool:
     return repo.es_participante(conv_id, user_id)
 
 
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # CUENTAS DEMO
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _sembrar_cuenta(c: dict, rol: str, resultado: dict) -> None:
     clave_hash = hash_password(datos_demo.CLAVE_DEMO)   # hash REAL, hecho por la app
@@ -360,9 +350,9 @@ def sembrar_cuentas_demo() -> dict:
         _sembrar_cuenta(c, "buscador", resultado)
     return resultado
 
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # ADMINISTRADORES — aquí están las DECISIONES; el SQL vive en repositorios.py
-#══════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 NIVELES_ADMIN = ("super_admin", "moderador", "soporte")
 
 
@@ -379,7 +369,7 @@ def verify_admin_login(correo: str, password: str) -> dict | None:
     clave_ok = verify_password(password, guardado)
     if not admin or not clave_ok or not admin["activo"]:
         return None
-    repo.registrar_acceso_admin(admin["id"],datetime.utcnow().isoformat(timespec="seconds"))
+    repo.registrar_acceso_admin(admin["id"], datetime.utcnow().isoformat(timespec="seconds"))
     return {k: v for k, v in admin.items() if k != "password_hash"}
 
 
@@ -479,33 +469,3 @@ def admin_obtener_empleador(user_id: str) -> dict | None:
 
 def admin_obtener_empleo(job_id: str) -> dict | None:
     return repo.admin_obtener_empleo(job_id)
-
-# ── RESTABLECER CONTRASEÑA ──────────────────────────────────────────────────
-
-def _hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode("utf-8")).hexdigest()
-
-
-def solicitar_restablecer_password(email: str, horas_validez: int = 1) -> str | None:
-    """Crea un token de un solo uso sin revelar si un correo existe."""
-    cred = repo.obtener_credenciales(_normalizar_email(email))
-    if not cred or not cred["activo"]:
-        return None
-    token = new_token()
-    ahora = datetime.utcnow()
-    expira = ahora + timedelta(hours=horas_validez)
-    repo.guardar_token_restablecer(_hash_token(token), cred["id"], ahora.isoformat(), expira.isoformat())
-    return token
-
-
-def token_restablecer_valido(token: str) -> bool:
-    fila = repo.obtener_token_restablecer(_hash_token(token))
-    return bool(fila) and datetime.fromisoformat(fila["expira_at"]) >= datetime.utcnow()
-
-
-def restablecer_password(token: str, nueva_password: str) -> bool:
-    fila = repo.obtener_token_restablecer(_hash_token(token))
-    if not fila or datetime.fromisoformat(fila["expira_at"]) < datetime.utcnow():
-        return False
-    repo.aplicar_restablecer_password(fila["usuario_id"],hash_password(nueva_password))
-    return True

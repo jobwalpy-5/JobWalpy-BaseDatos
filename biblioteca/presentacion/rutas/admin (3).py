@@ -16,7 +16,6 @@ Seguridad (igual que antes, más una capa):
 Niveles:  soporte (solo mirar) · moderador (gestionar) · super_admin (borrar).
 """
 import json
-import os
 
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -24,7 +23,6 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from dominio import servicios as db
 from nucleo import sesion_admin
 from presentacion.plantillas import templates
-from nucleo.rate_limit import permitir_intento
 
 router = APIRouter(prefix="/admin")
 
@@ -38,12 +36,10 @@ def iniciar_sesion_admin(response, admin_id: str) -> None:
         key=NOMBRE_COOKIE, value=sesion_admin.firmar(admin_id),
         max_age=sesion_admin.DURACION_SEGUNDOS,
         httponly=True, samesite="lax", path="/",
-        secure=os.environ.get("COOKIE_SECURE", "0" if os.environ.get("ENVIRONMENT") == "development" else "1") == "1",
-
     )
 
 
-# ── Ayudas ──────────────────────────────────────────────────────────────────
+# ── Ayudas ────────────────────────────────────────────────────────────────────
 
 def _es_htmx(request: Request) -> bool:
     return request.headers.get("HX-Request") == "true"
@@ -70,7 +66,7 @@ def _acceso(request: Request, minimo: int = 1, accion: bool = False):
     admin_id = sesion_admin.verificar(request.cookies.get(NOMBRE_COOKIE))
     admin = db.get_admin(admin_id) if admin_id else None
     if not admin:
-        destino = "/admin/login"
+        destino = "/login?next=/admin/dashboard"
         if _es_htmx(request):
             # Una redirección normal se "pintaría" dentro de la tabla; HX-Redirect
             # hace que HTMX cambie de página completa.
@@ -109,33 +105,7 @@ def _quitar(mensaje: str) -> HTMLResponse:
     return HTMLResponse("", headers=_toast(mensaje))
 
 
-# ── LOGIN ADMINISTRATIVO SEPARADO ────────────────────────────────────────────
-
-@router.get("/login", response_class=HTMLResponse)
-async def admin_login_page(request: Request):
-    """El acceso administrativo se inicia desde el formulario de login normal."""
-    admin_id = sesion_admin.verificar(request.cookies.get(NOMBRE_COOKIE))
-    if admin_id and db.get_admin(admin_id):
-        return RedirectResponse("/admin/dashboard", status_code=302)
-    return RedirectResponse("/login", status_code=303)
-
-
-@router.post("/login", response_class=HTMLResponse)
-def admin_login(request: Request, email: str = Form(...), password: str = Form(...)):
-    if not permitir_intento(request, "admin-login", 8, 900):
-        return templates.TemplateResponse(request=request, name="admin_login.html",
-            context={"error": "Demasiados intentos. Espera 15 minutos e inténtalo de nuevo."},
-            status_code=429)
-    admin = db.verify_admin_login(email.strip(), password)
-    if not admin:
-        return templates.TemplateResponse(request=request, name="admin_login.html",
-            context={"error": "Correo o contraseña incorrectos."}, status_code=401)
-    response = RedirectResponse("/admin/dashboard", status_code=302)
-    iniciar_sesion_admin(response, admin["id"])
-    return response
-
-
-# ── PÁGINAS ─────────────────────────────────────────────────────────────────
+# ── PÁGINAS ───────────────────────────────────────────────────────────────────
 
 @router.get("")
 async def raiz():
@@ -187,7 +157,7 @@ async def empleos(request: Request, search: str = ""):
     })
 
 
-# ── ACCIONES SOBRE USUARIOS ─────────────────────────────────────────────────
+# ── ACCIONES SOBRE USUARIOS ───────────────────────────────────────────────────
 
 @router.post("/usuarios/{user_id}/verificar")
 async def usuario_verificar(request: Request, user_id: str):
@@ -218,7 +188,7 @@ async def usuario_eliminar(request: Request, user_id: str):
     return _quitar("Usuario eliminado")
 
 
-# ── ACCIONES SOBRE EMPRESAS ─────────────────────────────────────────────────
+# ── ACCIONES SOBRE EMPRESAS ───────────────────────────────────────────────────
 # "vista" dice desde dónde se pulsó: en el dashboard la tarjeta desaparece y se
 # actualizan los números; en la lista de empresas se repinta la fila.
 
@@ -260,7 +230,7 @@ async def empresa_eliminar(request: Request, user_id: str):
     return _quitar("Empresa eliminada")
 
 
-# ── ACCIONES SOBRE EMPLEOS ──────────────────────────────────────────────────
+# ── ACCIONES SOBRE EMPLEOS ────────────────────────────────────────────────────
 
 @router.post("/empleos/{job_id}/desactivar")
 async def empleo_alternar(request: Request, job_id: str):
@@ -281,7 +251,7 @@ async def empleo_eliminar(request: Request, job_id: str):
     return _quitar("Empleo eliminado")
 
 
-# ── SALIR ───────────────────────────────────────────────────────────────────
+# ── SALIR ─────────────────────────────────────────────────────────────────────
 
 @router.get("/logout")
 async def logout():
