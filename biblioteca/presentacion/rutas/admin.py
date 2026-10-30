@@ -1,4 +1,5 @@
 """
+Panel de administración de JobWalpy.
 
 Cómo trabaja HTMX aquí:
   • Las páginas completas (GET) se piden normal. Si HTMX pide la misma URL
@@ -12,10 +13,12 @@ Seguridad (igual que antes, más una capa):
   • Los POST exigen el encabezado  HX-Request: true. Un formulario escondido en
     otra página web NO puede añadir encabezados propios, así que esto frena
     ataques CSRF (además de SameSite=Lax en la cookie).
+  • El login de admin limita los intentos fallidos (ver _LimiteIntentos).
 
 Niveles:  soporte (solo mirar) · moderador (gestionar) · super_admin (borrar).
 """
 import json
+import time
 
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
@@ -28,15 +31,71 @@ router = APIRouter(prefix="/admin")
 
 NOMBRE_COOKIE = "admin_sesion"
 PODER = {"soporte": 1, "moderador": 2, "super_admin": 3}
+URL_LOGIN = "/admin/login"
 
 
-def iniciar_sesion_admin(response, admin_id: str) -> None:
-    """La usa el login (users.py) para dejar la cookie firmada en la respuesta."""
+def iniciar_sesion_admin(response, admin_id: str, secure: bool = False) -> None:
+    """
+    Deja la cookie firmada del administrador en la respuesta (la usa el login de abajo).
+    secure=True en HTTPS: la cookie solo viaja cifrada. En local (http) va en False
+    para que siga funcionando en localhost.
+    """
     response.set_cookie(
         key=NOMBRE_COOKIE, value=sesion_admin.firmar(admin_id),
         max_age=sesion_admin.DURACION_SEGUNDOS,
-        httponly=True, samesite="lax", path="/",
+        httponly=True, samesite="lax", path="/", secure=secure,
     )
+
+
+# ── Límite de intentos de login ───────────────────────────────────────────────
+
+class _LimiteIntentos:
+    """
+    Cuenta los intentos fallidos por IP y bloquea durante un rato al pasarse.
+    Vive en memoria: en Vercel cada instancia lleva su propia cuenta, así que
+    frena ataques simples pero no reemplaza un límite a nivel de servidor.
+    """
+    MAXIMO = 5            # intentos fallidos permitidos
+    VENTANA = 10 * 60     # en esta cantidad de segundos
+
+    def __init__(self):
+        self._fallos: dict[str, list[float]] = {}
+
+    def _limpiar(self, clave: str) -> list[float]:
+        ahora = time.time()
+        recientes = [t for t in self._fallos.get(clave, []) if ahora - t < self.VENTANA]
+        if recientes:
+            self._fallos[clave] = recientes
+        else:
+            self._fallos.pop(clave, None)
+        return recientes
+
+    def bloqueado(self, clave: str) -> bool:
+        return len(self._limpiar(clave)) >= self.MAXIMO
+
+    def registrar_fallo(self, clave: str) -> None:
+        self._limpiar(clave)
+        self._fallos.setdefault(clave, []).append(time.time())
+
+    def olvidar(self, clave: str) -> None:
+        self._fallos.pop(clave, None)
+
+
+_limite = _LimiteIntentos()
+
+
+def _ip(request: Request) -> str:
+    # Detrás de Vercel la IP real llega en X-Forwarded-For.
+    reenviada = request.headers.get("x-forwarded-for", "")
+    if reenviada:
+        return reenviada.split(",")[0].strip()
+    return request.client.host if request.client else "desconocida"
+
+
+def _es_https(request: Request) -> bool:
+    # Detrás de Vercel el esquema original llega en X-Forwarded-Proto.
+    proto = request.headers.get("x-forwarded-proto", request.url.scheme)
+    return proto.split(",")[0].strip() == "https"
 
 
 # ── Ayudas ────────────────────────────────────────────────────────────────────
@@ -66,12 +125,11 @@ def _acceso(request: Request, minimo: int = 1, accion: bool = False):
     admin_id = sesion_admin.verificar(request.cookies.get(NOMBRE_COOKIE))
     admin = db.get_admin(admin_id) if admin_id else None
     if not admin:
-        destino = "/login?next=/admin/dashboard"
         if _es_htmx(request):
             # Una redirección normal se "pintaría" dentro de la tabla; HX-Redirect
             # hace que HTMX cambie de página completa.
-            return None, Response(status_code=200, headers={"HX-Redirect": destino})
-        return None, RedirectResponse(destino, status_code=302)
+            return None, Response(status_code=200, headers={"HX-Redirect": URL_LOGIN})
+        return None, RedirectResponse(URL_LOGIN, status_code=302)
 
     if PODER.get(admin["nivel"], 0) < minimo:
         if accion:
@@ -103,6 +161,52 @@ def _fila(request: Request, plantilla: str, contexto: dict, admin: dict, mensaje
 def _quitar(mensaje: str) -> HTMLResponse:
     """Respuesta vacía: HTMX reemplaza la fila por nada (= la elimina)."""
     return HTMLResponse("", headers=_toast(mensaje))
+
+
+# ── LOGIN / SALIR ─────────────────────────────────────────────────────────────
+
+def _admin_con_sesion(request: Request) -> dict | None:
+    admin_id = sesion_admin.verificar(request.cookies.get(NOMBRE_COOKIE))
+    return db.get_admin(admin_id) if admin_id else None
+
+
+@router.get("/login", response_class=HTMLResponse)
+async def login_page(request: Request):
+    # Si ya tiene una sesión de administrador válida, directo al panel.
+    if _admin_con_sesion(request):
+        return RedirectResponse("/admin/dashboard", status_code=302)
+    return templates.TemplateResponse(request=request, name="admin_login.html", context={})
+
+
+@router.post("/login", response_class=HTMLResponse)
+async def login(request: Request, email: str = Form(...), password: str = Form(...)):
+    clave = _ip(request)
+
+    if _limite.bloqueado(clave):
+        return templates.TemplateResponse(
+            request=request, name="admin_login.html", status_code=429,
+            context={"error": "Demasiados intentos fallidos. Espera unos minutos e inténtalo de nuevo."},
+        )
+
+    admin = db.verify_admin_login(email, password)
+    if not admin:
+        _limite.registrar_fallo(clave)
+        return templates.TemplateResponse(
+            request=request, name="admin_login.html", status_code=401,
+            context={"error": "Correo o contraseña incorrectos."},
+        )
+
+    _limite.olvidar(clave)
+    response = RedirectResponse("/admin/dashboard", status_code=302)
+    iniciar_sesion_admin(response, admin["id"], secure=_es_https(request))
+    return response
+
+
+@router.get("/logout")
+async def logout():
+    response = RedirectResponse(URL_LOGIN, status_code=302)
+    response.delete_cookie(NOMBRE_COOKIE, path="/")
+    return response
 
 
 # ── PÁGINAS ───────────────────────────────────────────────────────────────────
@@ -249,12 +353,3 @@ async def empleo_eliminar(request: Request, job_id: str):
         return rechazo
     db.admin_borrar_empleo(job_id)
     return _quitar("Empleo eliminado")
-
-
-# ── SALIR ─────────────────────────────────────────────────────────────────────
-
-@router.get("/logout")
-async def logout():
-    response = RedirectResponse("/", status_code=302)
-    response.delete_cookie(NOMBRE_COOKIE, path="/")
-    return response
