@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Request, Form
+git add .
+git commit -m "Solución de conflictos y actualización de repositorio"from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from datetime import date
 from dominio import servicios as db
