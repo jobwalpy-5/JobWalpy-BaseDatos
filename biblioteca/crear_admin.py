@@ -33,10 +33,10 @@ def main() -> None:
     if not REGLA.match(clave):
         sys.exit("✗ La contraseña debe tener 10+ caracteres, una mayúscula, un número y un símbolo.")
     try:
-        admin_id = db.crear_admin(nombre, correo, clave, nivel)
+        db.crear_admin(nombre, correo, clave, nivel)
     except ValueError as e:
         sys.exit(f"✗ {e}")
-    print(f"✓ Administrador creado ({nivel}). Entra por /login con ese correo y esa contraseña.")
+    print(f"✓ Administrador creado ({nivel}). Entra por /admin/login con ese correo y esa contraseña.")
 
 
 if __name__ == "__main__":

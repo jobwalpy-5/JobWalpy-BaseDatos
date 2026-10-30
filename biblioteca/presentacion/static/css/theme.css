@@ -1,0 +1,9 @@
+/* Tema oscuro: sobreescribe las variables definidas en style.css */
+[data-theme="dark"] {
+  --bg-page: #0f172a;
+  --bg-form: #1e293b;
+  --text: #e2e8f0;
+  --text-soft: #cbd5e1;
+  --text-muted: #94a3b8;
+  --border: #334155;
+}
