@@ -1,5 +1,5 @@
 """
-:D
+:C
 Crea (o te deja crear) una cuenta de administrador.
 
 Uso, desde la carpeta que tiene main.py (biblioteca/):
