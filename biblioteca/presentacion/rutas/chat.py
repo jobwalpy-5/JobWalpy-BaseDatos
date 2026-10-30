@@ -9,6 +9,17 @@ from presentacion.plantillas import templates
 router = APIRouter()
 
 
+def _chattable_users(user_id: str) -> list:
+    conversations = db.get_conversations_by_user(user_id)
+    contact_ids = {
+        str(participant)
+        for conv in conversations
+        for participant in conv.get("participants", [])
+        if str(participant) != str(user_id)
+    }
+    return [u for u in db.get_users() if str(u["id"]) in contact_ids]
+
+
 def _enrich_conversations(user_id: str) -> list:
     """Une cada conversación con los datos de la otra persona (nombre, avatar, etc.)."""
     enriched = []
@@ -31,8 +42,7 @@ async def chat_page(request: Request):
     if not user:
         return RedirectResponse("/login")
 
-    all_users = db.get_users()
-    chattable = [u for u in all_users if str(u["id"]) != str(user_id)]
+    chattable = _chattable_users(user_id)
 
     return templates.TemplateResponse(
         request=request, name="chat.html",
@@ -62,6 +72,22 @@ async def chat_with(request: Request, other_id: str, aplicacion_id: int | None =
         # Chatear con uno mismo no tiene sentido, así que se evita crear esa conversación.
         return RedirectResponse("/chat")
 
+    if aplicacion_id is not None:
+        application = db.get_application(str(aplicacion_id))
+        if not application:
+            return RedirectResponse("/chat?error=acceso_denegado", status_code=302)
+        job_for_application = db.get_job(application["job_id"])
+        if not job_for_application:
+            return RedirectResponse("/chat?error=acceso_denegado", status_code=302)
+        seeker_id = str(application["user_id"])
+        employer_id = str(job_for_application["posted_by"])
+        allowed_pair = (
+            str(user_id) == seeker_id and str(other_id) == employer_id
+        ) or (
+            str(user_id) == employer_id and str(other_id) == seeker_id
+        )
+        if not allowed_pair:
+            return RedirectResponse("/chat?error=acceso_denegado", status_code=302)
     conv = db.get_or_create_conversation(user_id, other_id, aplicacion_id=aplicacion_id)
     # Al abrir la conversación se marcan como leídos los mensajes que la otra
     # persona envió, igual que el "visto" de cualquier aplicación de chat.
@@ -69,8 +95,7 @@ async def chat_with(request: Request, other_id: str, aplicacion_id: int | None =
     # Se vuelve a leer la conversación para reflejar el estado "leído" ya actualizado.
     conv = db.get_conversation(conv["id"])
 
-    all_users = db.get_users()
-    chattable = [u for u in all_users if str(u["id"]) != str(user_id)]
+    chattable = _chattable_users(user_id)
 
     return templates.TemplateResponse(
         request=request, name="chat.html",

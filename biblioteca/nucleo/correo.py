@@ -7,9 +7,8 @@ def enviar_correo(destino: str, asunto: str, texto: str) -> bool:
     """Devuelve True si se envió por SMTP, False si solo se imprimió en consola."""
     host = os.environ.get("SMTP_HOST")
     if not host:
-        print("\n──────── CORREO SIMULADO (SMTP no configurado) ────────")
-        print(f"Para:   {destino}\nAsunto: {asunto}\n\n{texto}")
-        print("───────────────────────────────────────────────────────\n")
+        # No registrar cuerpos de correo: pueden contener tokens de acceso o reset.
+        print(f"[CORREO] SMTP no configurado; no se envió el mensaje a {destino!r}.")
         return False
 
     puerto = int(os.environ.get("SMTP_PORT", "587"))

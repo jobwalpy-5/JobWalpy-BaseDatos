@@ -12,13 +12,14 @@ from dominio.errores import (
     EmailYaRegistradoError,
     TaxIdYaRegistradoError,
     YaAplicasteError,
+    DocumentoYaRegistradoError,
 )
 from nucleo.conexion import get_conn
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 # USUARIOS
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 
 def _fila_a_usuario(conn, row: dict) -> dict:
     base = {
@@ -34,7 +35,7 @@ def _fila_a_usuario(conn, row: dict) -> dict:
         base.update({"name": "Administrador", "phone": "", "location": "", "bio": "",
                      "avatar": "AD", "avatar_color": "#4f46e5", "verified_company": False})
         return base
-    
+
     if row["rol"] == "buscador":
         p = conn.execute(
             "SELECT * FROM perfiles_buscador WHERE usuario_id = %s", (row["id"],)
@@ -63,6 +64,11 @@ def _fila_a_usuario(conn, row: dict) -> dict:
     return base
 
 
+def contar_buscadores_activos() -> int:
+    with get_conn() as conn:
+        return conn.execute("SELECT COUNT(*) AS n FROM usuarios WHERE activo = TRUE AND rol = 'buscador'").fetchone()["n"]
+
+
 def contar_usuarios_activos() -> int:
     with get_conn() as conn:
         return conn.execute("SELECT COUNT(*) AS n FROM usuarios WHERE activo = TRUE").fetchone()["n"]
@@ -72,6 +78,24 @@ def existe_email(email: str) -> bool:
     with get_conn() as conn:
         row = conn.execute("SELECT 1 FROM usuarios WHERE email = %s", (email,)).fetchone()
     return row is not None
+
+
+def existe_documento(document_type: str, document_number: str) -> bool:
+    """Compara documentos normalizados; el índice UNIQUE es la defensa final."""
+    with get_conn() as conn:
+        row = conn.execute(
+            """SELECT 1 FROM perfiles_buscador
+               WHERE upper(tipo_documento) = upper(%s)
+                 AND upper(regexp_replace(documento_numero, '[ .-]', '', 'g')) = upper(regexp_replace(%s, '[ .-]', '', 'g'))
+               LIMIT 1""",
+            (document_type.strip().upper(), document_number.strip().upper()),
+        ).fetchone()
+    return row is not None
+
+
+def contar_usuarios() -> int:
+    """Alias de compatibilidad para llamadas antiguas."""
+    return contar_usuarios_activos()
 
 
 def existe_tax_id(tax_id) -> bool:
@@ -124,13 +148,18 @@ def insertar_buscador(*, uid, email, password_hash, verificado, fecha_registro,
             # registros llegan casi al mismo tiempo, solo el UNIQUE de la
             # tabla puede detectarlo con certeza.
             raise EmailYaRegistradoError(f"El correo {email} ya está registrado.")
-        conn.execute(
-            "INSERT INTO perfiles_buscador "
-            "(usuario_id, nombre, telefono, ubicacion, bio, skills, experiencia, educacion, cv_url, avatar, avatar_color) "
-            "VALUES (%s, %s, %s, %s, %s, '[]', '', '', '', %s, %s)",
-            (uid, data["name"], data.get("phone", ""), data.get("location", ""),
-             data.get("bio", ""), avatar, color),
-        )
+        try:
+            conn.execute(
+                "INSERT INTO perfiles_buscador "
+                "(usuario_id, nombre, telefono, ubicacion, bio, skills, experiencia, educacion, cv_url, avatar, avatar_color, tipo_documento, documento_numero) "
+                "VALUES (%s, %s, %s, %s, %s, '[]', '', '', '', %s, %s, %s, %s)",
+                (uid, data["name"], data.get("phone", ""), data.get("location", ""),
+                 data.get("bio", ""), avatar, color, data.get("document_type"), data.get("document_number")),
+            )
+        except psycopg.errors.UniqueViolation as exc:
+            if getattr(exc.diag, "constraint_name", "") == "uq_perfiles_buscador_documento":
+                raise DocumentoYaRegistradoError("Este documento ya está asociado a una cuenta.") from exc
+            raise
 
 
 def insertar_empleador(*, uid, email, password_hash, verificado, verificado_legal,
@@ -240,14 +269,16 @@ def actualizar_password_hash(user_id: str, password_hash: str) -> bool:
 
 
 def desactivar_usuario(user_id: str) -> bool:
+    # Desactiva la cuenta y oculta sus ofertas sin destruir el historial.
     with get_conn() as conn:
         cur = conn.execute("UPDATE usuarios SET activo = FALSE WHERE id = %s", (str(user_id),))
+        conn.execute("UPDATE empleos SET activo = FALSE WHERE publicado_por = %s", (str(user_id),))
         return cur.rowcount > 0
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 # EMPLEOS
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 
 def _job_row_to_dict(row: dict) -> dict:
     return {
@@ -276,10 +307,11 @@ def obtener_empleo(job_id: str) -> dict | None:
 def insertar_empleo(job_id: str, job: dict) -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO empleos (id, titulo, empresa, ubicacion, tipo, "
+            "INSERT INTO empleos (id, titulo, empresa, ubicacion, salario_min, salario_max, tipo, "
             "categoria, descripcion, requisitos, beneficios, publicado_por, publicado_at, activo) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (job_id, job["title"], job["company"], job["location"],
+             int(job.get("salary_min") or 0), int(job.get("salary_max") or 0),
              job["type"], job["category"], job["description"], json.dumps(job.get("requirements", [])),
              json.dumps(job.get("benefits", [])), job["posted_by"], job["posted_at"],
              job.get("active", True)),
@@ -293,9 +325,9 @@ def borrar_empleo(job_id: str) -> bool:
         return cur.rowcount > 0
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 # APLICACIONES
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 
 def _app_row_to_dict(row: dict) -> dict:
     return {
@@ -374,9 +406,9 @@ def actualizar_estado_aplicacion(app_id: str, status: str) -> dict | None:
     return _app_row_to_dict(row) if row else None
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 # CONVERSACIONES Y MENSAJES
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 
 def listar_conversaciones_de_usuario(user_id: str) -> list:
     """Sin los mensajes (por performance). Para eso está obtener_conversacion + listar_mensajes."""
@@ -475,7 +507,7 @@ def es_participante(conv_id: str, user_id: str) -> bool:
     return row is not None
 
 
-# ── ADMIN ─────────────────────────────────────────────────────────────────────
+# ── ADMIN ───────────────────────────────────────────────────────────────────
 def contar_resumen() -> dict:
     with get_conn() as conn:
         return conn.execute(
@@ -509,11 +541,11 @@ def set_activo_usuario(user_id: str, activo: bool) -> None:
 
 
 
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 # ADMINISTRADORES — solo SQL, ninguna decisión (las decisiones están en servicios.py)
-# ══════════════════════════════════════════════════════════════════════════════
+#══════════════════════════════════════════════════════════════════════════════
 
-# ── Cuentas de admin ──────────────────────────────────────────────────────────
+# ── Cuentas de admin ────────────────────────────────────────────────────────
 
 def buscar_admin_por_correo(correo: str) -> dict | None:
     with get_conn() as conn:
@@ -552,7 +584,7 @@ def existe_usuario_con_correo(correo: str) -> bool:
         return conn.execute("SELECT 1 FROM usuarios WHERE email = %s", (correo,)).fetchone() is not None
 
 
-# ── Lecturas del panel ────────────────────────────────────────────────────────
+# ── Lecturas del panel ──────────────────────────────────────────────────────
 
 def admin_estadisticas() -> dict:
     with get_conn() as conn:
@@ -645,6 +677,29 @@ def admin_listar_empleos(busqueda: str = "") -> list:
         return conn.execute(sql, params).fetchall()
 
 
+def admin_obtener_usuario(user_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, email AS correo, rol, verificado, activo, fecha_registro FROM usuarios WHERE id = %s",
+            (str(user_id),),
+        ).fetchone()
+
+
+def admin_obtener_empleador(user_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            _SELECT_EMPLEADORES + " AND u.id = %s LIMIT 1", (str(user_id),)
+        ).fetchone()
+
+
+def admin_obtener_empleo(job_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, titulo, empresa, ubicacion, activo, publicado_at FROM empleos WHERE id = %s",
+            (str(job_id),),
+        ).fetchone()
+
+
 # ── Acciones del panel (cada una devuelve True si cambió alguna fila) ─────────
 
 def admin_marcar_correo_verificado(user_id: str) -> bool:
@@ -685,12 +740,13 @@ def admin_alternar_activo_empleo(job_id: str) -> bool:
 
 
 def admin_borrar_empleo(job_id: str) -> bool:
+    # Cierra la oferta sin borrar las postulaciones históricas.
     with get_conn() as conn:
-        return conn.execute("DELETE FROM empleos WHERE id = %s", (job_id,)).rowcount > 0
+        return conn.execute("UPDATE empleos SET activo = FALSE WHERE id = %s", (job_id,)).rowcount > 0
 
-    
 
-# ── RESTABLECER CONTRASEÑA ────────────────────────────────────────────────────
+
+# ── RESTABLECER CONTRASEÑA ──────────────────────────────────────────────────
 
 def guardar_token_restablecer(token_hash: str, user_id: str, creado_at: str, expira_at: str) -> None:
     with get_conn() as conn:
@@ -716,7 +772,7 @@ def aplicar_restablecer_password(user_id: str, password_hash: str) -> None:
     with get_conn() as conn:
         conn.execute("UPDATE usuarios SET password_hash = %s WHERE id = %s", (password_hash, str(user_id)))
         conn.execute("DELETE FROM tokens_restablecer WHERE usuario_id = %s", (str(user_id),))
-# ── RESTABLECER CONTRASEÑA ────────────────────────────────────────────────────
+# ── RESTABLECER CONTRASEÑA ──────────────────────────────────────────────────
 
 def _hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
@@ -746,5 +802,5 @@ def restablecer_password(token: str, nueva_password: str) -> bool:
     fila = repo.obtener_token_restablecer(_hash_token(token))
     if not fila or datetime.fromisoformat(fila["expira_at"]) < datetime.utcnow():
         return False
-    repo.aplicar_restablecer_password(fila["usuario_id"], hash_password(nueva_password))
+    repo.aplicar_restablecer_password(fila["usuario_id"],hash_password(nueva_password))
     return True

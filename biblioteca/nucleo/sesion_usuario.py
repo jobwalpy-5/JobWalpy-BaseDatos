@@ -60,7 +60,7 @@ def iniciar_sesion(response, user_id: str) -> None:
     response.set_cookie(
         key=NOMBRE_COOKIE, value=firmar(str(user_id)), max_age=DURACION_SEGUNDOS,
        httponly=True, samesite="lax", path="/",
-        secure=os.environ.get("COOKIE_SECURE") == "1",
+        secure=os.environ.get("COOKIE_SECURE", "0" if os.environ.get("ENVIRONMENT") == "development" else "1") == "1",
     )
 
 
