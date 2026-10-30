@@ -261,6 +261,7 @@ def _job_row_to_dict(row: dict) -> dict:
         "type": row["tipo"], "category": row["categoria"], "description": row["descripcion"],
         "requirements": json.loads(row["requisitos"] or "[]"),
         "benefits": json.loads(row["beneficios"] or "[]"),
+        "salary_min": row["salario_min"], "salary_max": row["salario_max"],
         "posted_by": row["publicado_por"], "posted_at": row["publicado_at"],
         "active": bool(row["activo"]),
     }
@@ -281,11 +282,11 @@ def obtener_empleo(job_id: str) -> dict | None:
 def insertar_empleo(job_id: str, job: dict) -> None:
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO empleos (id, titulo, empresa, ubicacion, tipo, "
+            "INSERT INTO empleos (id, titulo, empresa, ubicacion, salario_min, salario_max, tipo, "
             "categoria, descripcion, requisitos, beneficios, publicado_por, publicado_at, activo) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (job_id, job["title"], job["company"], job["location"],
-             job["type"], job["category"], job["description"], json.dumps(job.get("requirements", [])),
+             job.get("salary_min", 0), job.get("salary_max", 0), job["type"], job["category"], job["description"], json.dumps(job.get("requirements", [])),
              json.dumps(job.get("benefits", [])), job["posted_by"], job["posted_at"],
              job.get("active", True)),
         )
@@ -690,3 +691,26 @@ def admin_alternar_activo_empleo(job_id: str) -> bool:
 def admin_borrar_empleo(job_id: str) -> bool:
     with get_conn() as conn:
         return conn.execute("DELETE FROM empleos WHERE id = %s", (job_id,)).rowcount > 0
+
+
+# ── Lecturas de UNA fila (las usa el panel tras cada acción para repintar la fila) ──
+
+def admin_obtener_usuario(user_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, email AS correo, rol, verificado, activo, fecha_registro "
+            "FROM usuarios WHERE id = %s", (str(user_id),)
+        ).fetchone()
+
+
+def admin_obtener_empleador(user_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(_SELECT_EMPLEADORES + " AND u.id = %s", (str(user_id),)).fetchone()
+
+
+def admin_obtener_empleo(job_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, titulo, empresa, ubicacion, activo, publicado_at "
+            "FROM empleos WHERE id = %s", (str(job_id),)
+        ).fetchone()

@@ -16,6 +16,7 @@ from presentacion.rutas.applications import router as applications_router
 from presentacion.rutas.chat import router as chat_router
 from presentacion.rutas.media import router as media_router
 
+from nucleo.sesion_usuario import SesionFirmadaMiddleware
 from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
 from presentacion.rutas.admin import router as admin_router
@@ -23,6 +24,7 @@ from presentacion.rutas.admin import router as admin_router
 
 
 app = FastAPI(title="JobWalpy", description="Plataforma de empleo")
+app.add_middleware(SesionFirmadaMiddleware)
 app.mount("/static", StaticFiles(directory=str(DIR_STATIC)), name="static")
 
 app.include_router(jobs_router)

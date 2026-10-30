@@ -69,10 +69,11 @@ async def post_job_page(request: Request): # 👈 CORREGIDO
 @router.post("/post-job")
 async def post_job(
     request: Request,
-    title: str = Form(...), company: str = Form(...),
+    title: str = Form(...),
     location: str = Form(...), type: str = Form(...),
     category: str = Form(...), description: str = Form(...),
-    requirements: str = Form(...), benefits: str = Form(...)
+    requirements: str = Form(...), benefits: str = Form(default=""),
+    salary_min: int = Form(default=0), salary_max: int = Form(default=0)
 ): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
     
@@ -80,11 +81,15 @@ async def post_job(
     if not ctx["user"] or ctx["user"].get("role") != "empleador":
         return RedirectResponse("/login", status_code=302)
         
+    if salary_min < 0 or salary_max < 0 or (salary_max and salary_max < salary_min):
+        return RedirectResponse("/post-job?error=salario_invalido", status_code=302)
+
     job = {
-        "title": title, "company": company, "location": location,
+        "title": title, "company": ctx["user"].get("company_name") or ctx["user"]["name"], "location": location,
+        "salary_min": salary_min, "salary_max": salary_max,
         "type": type, "category": category, "description": description,
-        "requirements": [r.strip() for r in requirements.split(",")],
-        "benefits": [b.strip() for b in benefits.split(",")],
+        "requirements": [r.strip() for r in requirements.split(",") if r.strip()],
+        "benefits": [b.strip() for b in benefits.split(",") if b.strip()],
         "posted_by": user_id, "posted_at": str(date.today()), "active": True
     }
     new_job = db.create_job(job)

@@ -18,6 +18,11 @@ async def applications_page(request: Request):
         return RedirectResponse("/login?next=/applications", status_code=302)
 
     user = db.get_active_user(user_id)
+    if user and user.get("role") == "buscador":
+        propias = [{**a, "job": j} for a in db.get_applications_by_user(user_id)
+                   if (j := db.get_job(a["job_id"]))]
+        return templates.TemplateResponse(request=request, name="applications_seeker.html", context={
+            "user": user, "applications": propias, "total": len(propias)})
     if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
 
@@ -53,6 +58,9 @@ async def update_status(
     user = db.get_active_user(user_id)
     if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
+
+    if status not in ("pendiente", "aceptado", "rechazado"):
+        return RedirectResponse("/applications", status_code=302)
 
     application = db.get_application(application_id)
     if not application:
