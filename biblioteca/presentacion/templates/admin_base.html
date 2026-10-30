@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>{% block titulo %}Panel{% endblock %} — Admin JobWalpy</title>
   <meta name="htmx-config" content='{"allowEval": false, "selfRequestsOnly": true}'>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <linkhref="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
   <link rel="stylesheet" href="/static/css/style.css"/>
   <link rel="stylesheet" href="/static/css/admin.css"/>
-  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
+  <link rel="stylesheet" href="/static/css/theme.css"/>
+  <scriptsrc="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
 </head>
 <body style="display:flex;min-height:100vh;background:var(--bg-page);">
 {% include "admin_sidebar.html" %}
@@ -30,5 +32,6 @@
   document.body.addEventListener('htmx:responseError', () => adminToast('No se pudo completar la acción.', 'error'));
   document.body.addEventListener('htmx:sendError', () => adminToast('Sin conexión con el servidor.', 'error'));
 </script>
+<script src="/static/js/theme.js"></script>
 </body>
 </html>

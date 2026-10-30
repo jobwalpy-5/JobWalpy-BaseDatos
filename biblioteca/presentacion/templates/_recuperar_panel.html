@@ -7,8 +7,10 @@
   <title>Recuperar contraseña — JobWalpy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=REM:wght@100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <linkhref="https://fonts.googleapis.com/css2?family=REM:wght@100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
   <link rel="stylesheet" href="/static/css/auth.css" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
   <script src="https://unpkg.com/htmx.org@2.0.4"></script>
   <style>
     .card { background: var(--bg-form); border-radius: var(--radius); padding: 36px 32px;
@@ -29,18 +31,16 @@
     #panel.htmx-swapping { opacity: 0; transition: opacity .15s; }    /* desvanecido suave al cambiar */
   </style>
 </head>
-<body>
+<body class="recovery-page">
 
- 
-<a href="/" class="floating-logo" aria-label="JobWalpy, ir al inicio">
-  <img class="brand-logo" src="/static/img/logo.png" alt="Logo de JobWalpy">
-  <span class="logo-text">JobWalpy</span>
-</a>
-
+  <a href="/" class="floating-logo" aria-label="JobWalpy — Inicio">
+    <img class="brand-logo-image brand-logo-image--auth" src="/static/img/logo.png" alt="" width="48" height="48" />
+    <span class="logo-text">JobWalpy</span>
+  </a>
 
   <div class="card">
     <div id="panel" aria-live="polite">
-      {% include "_recuperar_panel.html" %}
+      {% include "recuperar.html" %}
     </div>
     <br />
     <a href="/login" class="volver">← Volver a iniciar sesión</a>
@@ -60,6 +60,7 @@
       btn.querySelector('ion-icon').setAttribute('name', mostrar ? 'eye-off-outline' : 'eye-outline');
     });
   </script>
+  <script src="/static/js/theme.js"></script>
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
