@@ -6,8 +6,8 @@
   <title>{% if show_register %}Registrarse{% else %}Iniciar sesión{% endif %} — JobWalpy</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <linkhref="https://fonts.googleapis.com/css2?family=REM:ital,wght@0,100..900;1,100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
-<script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
+  <link href="https://fonts.googleapis.com/css2?family=REM:ital,wght@0,100..900;1,100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
   <link rel="stylesheet" href="/static/css/auth.css" />
   <link rel="stylesheet" href="/static/css/theme.css" />
 </head>
@@ -70,7 +70,7 @@
           <button id="unclock-sign-in" type="submit">Iniciar sesión</button>
         </div>
         <p class="toggle-text">¿No tienes cuenta? <span id="btn-sign-up-mobile">Regístrate</span></p>
-
+        
       </form>
     </div>
 
@@ -79,7 +79,7 @@
       <div class="sign-up" id="register-panel">
         <h1>Registrarse</h1>
         <div class="social-networks">
-
+         
         </div>
         <span>Elige cómo quieres usar JobWalpy</span>
 
@@ -131,7 +131,7 @@
               <ion-icon name="eye-outline"></ion-icon>
             </button>
             </div>
-
+          
           <!-- Ubicación: departamento completo o ciudad principal de Colombia -->
           <div class="box-sign-up location-select-wrap">
             <ion-icon name="location-outline"></ion-icon>
@@ -141,26 +141,25 @@
                 <option value="Amazonas">Todo el departamento: Amazonas</option><option value="Leticia, Amazonas">Leticia</option>
               </optgroup>
               <optgroup label="Antioquia">
-                <option value="Antioquia">Todo el departamento: Antioquia</option><option value="Medellín, Antioquia">Medellín</option><option value="Bello, Antioquia">Bello</option><option value="Envigado, Antioquia">Envigado</option><option value="Itagüí, Antioquia">Itagüí-</option><option value="Apartadó, Antioquia">Apartadó</option><option value="Rionegro, Antioquia">Rionegro</option><option value="Turbo, Antioquia">Turbo</option>
+                <option value="Antioquia">Todo el departamento: Antioquia</option><option value="Medellín, Antioquia">Medellín</option><option value="Bello, Antioquia">Bello</option><option value="Envigado, Antioquia">Envigado</option><option value="Itagüí, Antioquia">Itagüí</option><option value="Apartadó, Antioquia">Apartadó</option><option value="Rionegro, Antioquia">Rionegro</option><option value="Turbo, Antioquia">Turbo</option>
               </optgroup>
               <optgroup label="Arauca">
                 <option value="Arauca">Todo el departamento: Arauca</option><option value="Arauca, Arauca">Arauca</option><option value="Saravena, Arauca">Saravena</option>
               </optgroup>
               <optgroup label="Atlántico">
-                <option value="Atlántico">Todo el departamento: Atlántico</option><option value="Barranquilla, Atlántico">Barranquilla</option><option value="Soledad,
-Atlántico">Soledad</option><option value="Malambo, Atlántico">Malambo</option>
+                <option value="Atlántico">Todo el departamento: Atlántico</option><option value="Barranquilla, Atlántico">Barranquilla</option><option value="Soledad, Atlántico">Soledad</option><option value="Malambo, Atlántico">Malambo</option>
               </optgroup>
               <optgroup label="Bogotá D.C.">
                 <option value="Bogotá, D.C.">Bogotá D.C.</option>
               </optgroup>
               <optgroup label="Bolívar">
-                <option value="Bolívar">Todo el departamento: Bolívar</option><option value="Cartagena, Bolívar">Cartagena</option><option value="Magangué, Bolí-var">Magangué</option><option value="Turbaco, Bolívar">Turbaco</option>
+                <option value="Bolívar">Todo el departamento: Bolívar</option><option value="Cartagena, Bolívar">Cartagena</option><option value="Magangué, Bolívar">Magangué</option><option value="Turbaco, Bolívar">Turbaco</option>
               </optgroup>
               <optgroup label="Boyacá">
                 <option value="Boyacá">Todo el departamento: Boyacá</option><option value="Tunja, Boyacá">Tunja</option><option value="Duitama, Boyacá">Duitama</option><option value="Sogamoso, Boyacá">Sogamoso</option>
               </optgroup>
               <optgroup label="Caldas">
-                <option value="Caldas">Todo el departamento: Caldas</option><option value="Manizales, Caldas">Manizales</option><option value="La Dorada, Caldas">La Dorada</option><option value="Villamaría, Caldas">Villamarí-a</option>
+                <option value="Caldas">Todo el departamento: Caldas</option><option value="Manizales, Caldas">Manizales</option><option value="La Dorada, Caldas">La Dorada</option><option value="Villamaría, Caldas">Villamaría</option>
               </optgroup>
               <optgroup label="Caquetá">
                 <option value="Caquetá">Todo el departamento: Caquetá</option><option value="Florencia, Caquetá">Florencia</option>
@@ -181,8 +180,7 @@ Atlántico">Soledad</option><option value="Malambo, Atlántico">Malambo</option>
                 <option value="Córdoba">Todo el departamento: Córdoba</option><option value="Montería, Córdoba">Montería</option><option value="Lorica, Córdoba">Lorica</option><option value="Sahagún, Córdoba">Sahagún</option>
               </optgroup>
               <optgroup label="Cundinamarca">
-                <option value="Cundinamarca">Todo el departamento: Cundinamarca</option><option value="Soacha, Cundinamarca">Soacha</option><option value="Girardot, Cundinamarca">Girardot</option><option value="Facatativá, Cundinamarca">Facatativá</option><option value="Zipaquirá,
-Cundinamarca">Zipaquirá</option><option value="Chía, Cundinamarca">Chí-a</option>
+                <option value="Cundinamarca">Todo el departamento: Cundinamarca</option><option value="Soacha, Cundinamarca">Soacha</option><option value="Girardot, Cundinamarca">Girardot</option><option value="Facatativá, Cundinamarca">Facatativá</option><option value="Zipaquirá, Cundinamarca">Zipaquirá</option><option value="Chía, Cundinamarca">Chía</option>
               </optgroup>
               <optgroup label="Guainía">
                 <option value="Guainía">Todo el departamento: Guainía</option><option value="Inírida, Guainía">Inírida</option>
@@ -212,7 +210,7 @@ Cundinamarca">Zipaquirá</option><option value="Chía, Cundinamarca">Chí-a</opt
                 <option value="Putumayo">Todo el departamento: Putumayo</option><option value="Mocoa, Putumayo">Mocoa</option><option value="Puerto Asís, Putumayo">Puerto Asís</option>
               </optgroup>
               <optgroup label="Quindío">
-                <option value="Quindío">Todo el departamento: Quindío</option><option value="Armenia, Quindío">Armenia</option><option value="Calarcá, Quindí-o">Calarcá</option>
+                <option value="Quindío">Todo el departamento: Quindío</option><option value="Armenia, Quindío">Armenia</option><option value="Calarcá, Quindío">Calarcá</option>
               </optgroup>
               <optgroup label="Risaralda">
                 <option value="Risaralda">Todo el departamento: Risaralda</option><option value="Pereira, Risaralda">Pereira</option><option value="Dosquebradas, Risaralda">Dosquebradas</option><option value="Santa Rosa de Cabal, Risaralda">Santa Rosa de Cabal</option>
@@ -230,7 +228,7 @@ Cundinamarca">Zipaquirá</option><option value="Chía, Cundinamarca">Chí-a</opt
                 <option value="Tolima">Todo el departamento: Tolima</option><option value="Ibagué, Tolima">Ibagué</option><option value="El Espinal, Tolima">El Espinal</option>
               </optgroup>
               <optgroup label="Valle del Cauca">
-                <option value="Valle del Cauca">Todo el departamento: Valle del Cauca</option><option value="Cali, Valle del Cauca">Cali</option><option value="Palmira, Valle del Cauca">Palmira</option><option value="Buenaventura, Valle del Cauca">Buenaventura</option><option value="Tuluá, Valle del Cauca">Tuluá</option><option value="Buga, Valle del Cauca">Buga</option><option value="Cartago, Valle del Cauca">Cartago</option><option value="Jamundí, Valle del Cauca">Jamundí-</option>
+                <option value="Valle del Cauca">Todo el departamento: Valle del Cauca</option><option value="Cali, Valle del Cauca">Cali</option><option value="Palmira, Valle del Cauca">Palmira</option><option value="Buenaventura, Valle del Cauca">Buenaventura</option><option value="Tuluá, Valle del Cauca">Tuluá</option><option value="Buga, Valle del Cauca">Buga</option><option value="Cartago, Valle del Cauca">Cartago</option><option value="Jamundí, Valle del Cauca">Jamundí</option>
               </optgroup>
               <optgroup label="Vaupés">
                 <option value="Vaupés">Todo el departamento: Vaupés</option><option value="Mitú, Vaupés">Mitú</option>
@@ -245,7 +243,7 @@ Cundinamarca">Zipaquirá</option><option value="Chía, Cundinamarca">Chí-a</opt
             <button type="submit">Crear cuenta</button>
           </div>
         </form>
-
+        
           <!-- Panel empleador: redirige al formulario completo -->
         <div id="panel-empleador" class="role-form" style="display:none; text-align:center; padding: 16px 0;">
           <p style="font-size:14px;color:#444e5e;margin-bottom:20px;line-height:1.6;">

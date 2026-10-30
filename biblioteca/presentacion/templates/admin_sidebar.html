@@ -1,21 +1,9 @@
 <aside style="width:220px;background:#fff;border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 12px;flex-shrink:0;min-height:100vh;position:sticky;top:0;height:100vh;">
- 
-  <div class="admin-brand">
-    <a
-      href="/admin/dashboard"
-      class="admin-brand-link"
-      aria-label="JobWalpy, ir al panel administrativo"
-    >
-      <img
-        class="admin-brand-logo"
-        src="/static/img/logo.png"
-        alt="Logo de JobWalpy"
-      >
-      <span class="admin-brand-name">JobWalpy</span>
-    </a>
-    <span class="admin-brand-badge">ADMIN</span>
-  </div>
-
+  <a href="/" style="display:flex;align-items:center;gap:8px;margin-bottom:28px;padding:0 8px;text-decoration:none;">
+    <img class="brand-logo-image" src="/static/img/logo.png" alt="" width="34" height="34" />
+    <span class="logo-text" style="font-size:0.95rem;">JobWalpy</span>
+    <span style="font-size:9px;background:rgba(1,47,94,0.08);color:var(--primary);border:1px solid rgba(1,47,94,0.2);padding:2px 6px;border-radius:8px;margin-left:auto;">ADMIN</span>
+  </a>
   <span style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;padding:0 8px;margin-bottom:4px;">General</span>
   <a href="/admin/dashboard" style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;text-decoration:none;font-size:13px;font-weight:500;margin-bottom:1px;{% if request.url.path == '/admin/dashboard' %}background:rgba(1,47,94,0.08);color:var(--primary);font-weight:600;{% else %}color:var(--text-soft);{% endif %}">Dashboard</a>
   <span style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.7px;padding:0 8px;margin:14px 0 4px;">Gestión</span>

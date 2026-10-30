@@ -6,17 +6,17 @@
   <title>{% block title %}JobWalpy{% endblock %}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <linkhref="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-<script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
   <link rel="stylesheet" href="/static/css/style.css" />
   <link rel="stylesheet" href="/static/css/theme.css" />
   {% block extra_css %}{% endblock %}
 </head>
 <body>
 
-  <!--══════════════════════════════════════════════════════════════
+  <!-- ══════════════════════════════════════════════════════════════
        NAVBAR — cambia según el rol del usuario
-══════════════════════════════════════════════════════════════ -->
+       ══════════════════════════════════════════════════════════════ -->
   <nav class="navbar">
     <div class="nav-inner">
       <a href="/" class="nav-logo" aria-label="JobWalpy — Inicio">
@@ -35,7 +35,7 @@
         <a href="/chat" class="nav-link">💬 Mensajes</a>
         <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
         <a href="/profile" style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--radius);text-decoration:none;border:1.5px solid var(--border);transition:all var(--transition);"
-           onmouseover="this.style.borderColor='var(--primary)'"onmouseout="this.style.borderColor='var(--border)'">
+           onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
           <div style="width:28px;height:28px;border-radius:50%;background:{{ user.avatar_color }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">
             {{ user.avatar }}
           </div>
@@ -53,7 +53,7 @@
         <a href="/chat" class="nav-link">💬 Chat</a>
         <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
         <a href="/profile" style="display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:var(--radius);text-decoration:none;border:1.5px solid var(--border);transition:all var(--transition);"
-           onmouseover="this.style.borderColor='var(--primary)'"onmouseout="this.style.borderColor='var(--border)'">
+           onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='var(--border)'">
           <div style="width:28px;height:28px;border-radius:50%;background:{{ user.avatar_color }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">
             {{ user.avatar }}
           </div>
@@ -132,7 +132,7 @@
         <span style="color:#fff;font-family:'Syne',sans-serif;font-weight:700;font-size:15px;">💬 Mensajes</span>
         <div style="display:flex;gap:10px;align-items:center;">
           <a href="/chat" style="color:rgba(255,255,255,0.85);font-size:12px;text-decoration:none;">Ver todo →</a>
-          <button id="float-close" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:24px;height: 24px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">✕</button>
+          <button id="float-close" style="background:rgba(255,255,255,0.15);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;">✕</button>
         </div>
       </div>
       <div style="padding:10px 12px;border-bottom:1px solid #C9CCCB;">
@@ -145,7 +145,7 @@
           {% for u in all_users %}
           <a href="/chat/{{ u.id }}" id="fu-{{ u.id }}"
             style="display:flex;align-items:center;gap:10px;padding:10px 14px;text-decoration:none;color:inherit;border-bottom:1px solid rgba(0,0,0,0.05);transition:background 0.15s;"
-            onmouseover="this.style.background='#f5efeb'"onmouseout="this.style.background=''">
+            onmouseover="this.style.background='#f5efeb'" onmouseout="this.style.background=''">
             <div style="width:36px;height:36px;border-radius:50%;background:{{ u.avatar_color }};color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">{{ u.avatar }}</div>
             <div>
               <div style="font-size:13px;font-weight:600;color:#0a1b35;" class="fu-name">{{ u.name }}</div>
@@ -165,9 +165,9 @@
     const floatClose=document.getElementById('float-close');
     const floatSearch=document.getElementById('float-search');
     let isOpen=false;
-floatBtn.addEventListener('click',()=>{isOpen=!isOpen;floatWin.style.display=isOpen?'flex':'none';floatWin.style.flexDirection='column';floatBtn.style.transform=isOpen?'scale(0.9)':'';});
-floatClose.addEventListener('click',(e)=>{e.stopPropagation();isOpen=false;floatWin.style.display='none';floatBtn.style.transform='';});
-    floatSearch.addEventListener('input',function(){constq=this.value.toLowerCase();document.querySelectorAll('#float-user-lista').forEach(el=>{const name=el.querySelector('.fu-name')?.textContent.toLowerCase()||'';el.style.display=name.includes(q)?'':'none';});}) ;
+    floatBtn.addEventListener('click',()=>{isOpen=!isOpen;floatWin.style.display=isOpen?'flex':'none';floatWin.style.flexDirection='column';floatBtn.style.transform=isOpen?'scale(0.9)':'';});
+    floatClose.addEventListener('click',(e)=>{e.stopPropagation();isOpen=false;floatWin.style.display='none';floatBtn.style.transform='';});
+    floatSearch.addEventListener('input',function(){const q=this.value.toLowerCase();document.querySelectorAll('#float-user-list a').forEach(el=>{const name=el.querySelector('.fu-name')?.textContent.toLowerCase()||'';el.style.display=name.includes(q)?'':'none';});});
   </script>
   {% endif %}
 
