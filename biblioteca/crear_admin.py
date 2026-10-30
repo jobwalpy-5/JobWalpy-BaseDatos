@@ -1,8 +1,4 @@
 """
-<<<<<<< HEAD
-:C
-=======
->>>>>>> 10a688e76031f3dd1068cbec45b0a7bdad3b2b6c
 Crea (o te deja crear) una cuenta de administrador.
 
 Uso, desde la carpeta que tiene main.py (biblioteca/):
