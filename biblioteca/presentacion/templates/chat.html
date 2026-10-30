@@ -253,7 +253,7 @@
 
 {% block extra_js %}
 <script>
-// Ventana emergente para iniciar una nueva conversación y buscadores de la lista.
+// ── Ventana emergente de nueva conversación y buscadores ─────────────────────
 const modal = document.getElementById('new-chat-modal');
 document.getElementById('new-chat-btn')?.addEventListener('click', () => modal.classList.add('open'));
 document.getElementById('close-modal')?.addEventListener('click', () => modal.classList.remove('open'));
@@ -268,14 +268,13 @@ document.getElementById('user-search')?.addEventListener('input', function() {
 
 document.getElementById('conv-search')?.addEventListener('input', function() {
   const q = this.value.toLowerCase();
-  document.querySelectorAll('.conv-item').forEach(el => {
+  document.querySelectorAll('#conv-list .conv-item').forEach(el => {
     el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
   });
 });
 
-
-// Chat con consulta periódica (polling) por HTTP.
 {% if active_conv and other_user %}
+// ── Chat en tiempo real (WebSocket) con respaldo por HTTP ────────────────────
 const convId    = "{{ active_conv.id }}";
 const myId      = "{{ user.id }}";
 const container = document.getElementById('messages-container');
@@ -289,8 +288,7 @@ let lastId = Number("{{ active_conv.messages[-1].id if active_conv.messages else
 function scrollBottom() { container.scrollTop = container.scrollHeight; }
 scrollBottom();
 
-// Se usa textContent y no innerHTML, de modo que un mensaje con código HTML
-// se muestra como texto y nunca se ejecuta.
+// Se usa textContent y no innerHTML: un mensaje con HTML se muestra como texto y nunca se ejecuta.
 function appendMessage(msg) {
   const mine = String(msg.sender_id) === myId;
   const wrap = document.createElement('div');
@@ -315,7 +313,7 @@ function appendMessage(msg) {
   scrollBottom();
 }
 
-// Dibuja el mensaje solo si es más nuevo que el último mostrado, para evitar duplicados.
+// Dibuja el mensaje solo si es más nuevo que el último mostrado (evita duplicados).
 function mostrarSiEsNuevo(msg) {
   const id = Number(msg.id);
   if (id <= lastId) return;
@@ -326,7 +324,7 @@ function mostrarSiEsNuevo(msg) {
 // Recupera por HTTP los mensajes que pudieron llegar mientras el socket estaba desconectado.
 async function recuperarPerdidos() {
   try {
-    const res = await fetch(`/api/chat/${convId}/messages?since=${lastId}`);
+    const res = await fetch(`/api/chat/${encodeURIComponent(convId)}/messages?since=${lastId}`);
     const data = await res.json();
     (data.messages || []).forEach(mostrarSiEsNuevo);
   } catch (e) {}
@@ -336,7 +334,7 @@ let socket = null;
 let intentos = 0;
 let pingTimer = null;
 
-// El punto de estado se ve de su color normal cuando hay conexión y gris cuando no la hay.
+// El punto de estado se ve de su color normal si hay conexión y gris si no la hay.
 function setConectado(ok) {
   if (statusDot) statusDot.style.background = ok ? '' : '#9ca3af';
 }
@@ -360,21 +358,21 @@ function conectar() {
     const data = JSON.parse(event.data);
     if (data.type === 'message') mostrarSiEsNuevo(data.message);
     else if (data.type === 'error') alert(data.error);
-    // El tipo "read" indica que el servidor ya guardó el "visto". La interfaz actual no lo muestra.
+    // data.type === 'read': el servidor ya guardó el "visto"; la interfaz actual no lo muestra.
   };
 
   socket.onclose = () => {
     setConectado(false);
     clearInterval(pingTimer);
-    // Reintenta la conexión con espera creciente: 1 s, 2 s, 4 s, hasta un máximo de 15 s.
+    // Reintenta con espera creciente: 1 s, 2 s, 4 s ... máximo 15 s.
     const espera = Math.min(1000 * 2 ** intentos, 15000);
     intentos++;
     setTimeout(conectar, espera);
   };
 }
 
-// Envía por WebSocket cuando está conectado. Si no lo está (por ejemplo en un
-// hosting sin soporte de WebSocket), envía el mensaje por HTTP como respaldo.
+// Envía por WebSocket si está conectado; si no (por ejemplo en Vercel, que no
+// soporta WebSocket), envía por HTTP como respaldo.
 async function sendMessage() {
   const text = input.value.trim();
   if (!text) return;
@@ -387,7 +385,7 @@ async function sendMessage() {
   }
 
   try {
-    const res = await fetch(`/api/chat/${convId}/send`, {
+    const res = await fetch(`/api/chat/${encodeURIComponent(convId)}/send`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
@@ -410,7 +408,8 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-// El servidor no tiene endpoint WebSocket (y Vercel no los soporta): se usa solo HTTP con consulta cada 3 s.
+// Abre la conexión en tiempo real.
+conectar();
 
 // Mientras el WebSocket esté desconectado, consulta los mensajes nuevos por HTTP cada 3 segundos.
 setInterval(() => {
