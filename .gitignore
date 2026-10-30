@@ -1,7 +1,9 @@
 .venv/
 venv/
 __pycache__/
-*.pyc
+*.py[cod]
 .env
+.env.*
+!.env.example
 jobwalpy.db
 biblioteca/presentacion/static/uploads/

@@ -9,7 +9,7 @@ Los nombres de las funciones públicas son los mismos que tenía database.py,
 así que en las rutas solo cambia la línea del import.
 """
 from datetime import date, datetime, timedelta
-
+import hashlib
 from dominio import datos_demo
 from dominio import repositorios as repo
 from dominio.errores import (  # noqa: F401  (se re-exportan para que las rutas los importen desde aquí)
@@ -350,6 +350,59 @@ def sembrar_cuentas_demo() -> dict:
         _sembrar_cuenta(c, "buscador", resultado)
     return resultado
 
+
+# ── RESTABLECER CONTRASEÑA ───────────────────────────────────────
+
+def _hash_token(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def solicitar_restablecer_password(email: str, horas_validez: int = 1) -> str | None:
+    email = _normalizar_email(email)
+    cred = repo.obtener_credenciales(email)
+
+    if not cred or not cred["activo"]:
+        return None
+
+    token = new_token()
+    ahora = datetime.utcnow()
+    expira = ahora + timedelta(hours=horas_validez)
+
+    repo.guardar_token_restablecer(
+        _hash_token(token),
+        cred["id"],
+        ahora.isoformat(),
+        expira.isoformat()
+    )
+
+    return token
+
+
+def token_restablecer_valido(token: str) -> bool:
+    fila = repo.obtener_token_restablecer(_hash_token(token))
+
+    if not fila:
+        return False
+
+    return datetime.fromisoformat(fila["expira_at"]) >= datetime.utcnow()
+
+
+def restablecer_password(token: str, nueva_password: str) -> bool:
+    fila = repo.obtener_token_restablecer(_hash_token(token))
+
+    if not fila:
+        return False
+
+    if datetime.fromisoformat(fila["expira_at"]) < datetime.utcnow():
+        return False
+
+    repo.aplicar_restablecer_password(
+        fila["usuario_id"],
+        hash_password(nueva_password)
+    )
+
+    return True
+
 # ══════════════════════════════════════════════════════════════════════════════
 # ADMINISTRADORES — aquí están las DECISIONES; el SQL vive en repositorios.py
 # ══════════════════════════════════════════════════════════════════════════════
@@ -469,3 +522,4 @@ def admin_obtener_empleador(user_id: str) -> dict | None:
 
 def admin_obtener_empleo(job_id: str) -> dict | None:
     return repo.admin_obtener_empleo(job_id)
+

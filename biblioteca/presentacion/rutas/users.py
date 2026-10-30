@@ -243,3 +243,107 @@ async def delete_account(request: Request):
     response = RedirectResponse("/", status_code=302)
     response.delete_cookie("user_id", path="/")
     return response
+
+# ── RECUPERAR CONTRASEÑA ─────────────────────────────────────────
+
+@router.get("/forgot-password", response_class=HTMLResponse)
+async def forgot_password_page(request: Request):
+    return templates.TemplateResponse(
+        request=request,
+        name="recuperar.html",
+        context={"modo": "solicitar"}
+    )
+
+
+@router.post("/forgot-password", response_class=HTMLResponse)
+async def forgot_password(request: Request, email: str = Form(...)):
+    email = email.strip()
+
+    if len(email) > 254 or not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return templates.TemplateResponse(
+            request=request,
+            name="recuperar.html",
+            context={
+                "modo": "solicitar",
+                "error": "Escribe un correo electrónico válido."
+            }
+        )
+
+    token = db.solicitar_restablecer_password(email)
+
+    if token:
+        from nucleo.correo import enviar_correo
+
+        base_url = str(request.base_url).rstrip("/")
+        enlace = f"{base_url}/reset-password?token={token}"
+
+        enviar_correo(
+            email,
+            "Recuperar contraseña - JobWalpy",
+            f"Hola:\n\nPara cambiar tu contraseña, abre este enlace:\n\n"
+            f"{enlace}\n\n"
+            "Si no solicitaste el cambio, ignora este mensaje."
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recuperar.html",
+        context={"modo": "enviado"}
+    )
+
+
+@router.get("/reset-password", response_class=HTMLResponse)
+async def reset_password_page(request: Request, token: str = ""):
+    if not token or not db.token_restablecer_valido(token):
+        return templates.TemplateResponse(
+            request=request,
+            name="recuperar.html",
+            context={"modo": "invalido"}
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recuperar.html",
+        context={"modo": "nueva", "token": token}
+    )
+
+
+@router.post("/reset-password", response_class=HTMLResponse)
+async def reset_password(
+    request: Request,
+    token: str = Form(...),
+    password: str = Form(...),
+    password2: str = Form(...)
+):
+    if password != password2:
+        return templates.TemplateResponse(
+            request=request,
+            name="recuperar.html",
+            context={
+                "modo": "nueva",
+                "token": token,
+                "error": "Las contraseñas no coinciden."
+            }
+        )
+
+    try:
+        validar_password_fuerte(password)
+    except ValueError as e:
+        return templates.TemplateResponse(
+            request=request,
+            name="recuperar.html",
+            context={
+                "modo": "nueva",
+                "token": token,
+                "error": str(e)
+            }
+        )
+
+    if not db.restablecer_password(token, password):
+        return templates.TemplateResponse(
+            request=request,
+            name="recuperar.html",
+            context={"modo": "invalido"}
+        )
+
+    return RedirectResponse("/login?password_reset=1", status_code=303)

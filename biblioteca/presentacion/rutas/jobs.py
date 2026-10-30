@@ -1,4 +1,4 @@
-sfrom fastapi import APIRouter, Request, Form
+from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from datetime import date
 from dominio import servicios as db
