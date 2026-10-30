@@ -42,20 +42,41 @@ body {
   z-index: 999;
 }
 
-.logo-box {
-    width: 150px;      /* Controla el ancho del logo */
-    height: auto;      /* Mantiene la proporción original */
-    display: block;    /* Ayuda a centrarlo o alinearlo mejor */
-    margin: 10px;      /* Le da un espacio alrededor */
-    border-radius: 6px; /* Redondea las esquinas del logo */
+/* ─── LOGO RESPONSIVE ─────────────────────────────────────────────────── */
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: clamp(6px, 1.5vw, 10px);
+  min-width: 0;              /* permite que el texto se encoja en pantallas chicas */
+  flex-shrink: 1;
 }
 
+.brand-logo-image {
+  /* de 30px en móvil hasta 42px en escritorio */
+  width: clamp(30px, 5vw, 42px);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 8px;
+}
+
+.brand-logo-image--small { width: clamp(24px, 4vw, 30px); }   /* footer */
+.brand-logo-image--auth  { width: clamp(40px, 8vw, 56px); }   /* login y registro */
 
 .logo-text {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: clamp(0.95rem, 2.5vw, 1.15rem);
   color: var(--primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* En pantallas muy pequeñas se deja solo el ícono */
+@media (max-width: 360px) {
+  .nav-logo .logo-text { display: none; }
 }
 
 /* ─── ALERTA DE SERVIDOR ─────────────────────────────────────────────────── */
