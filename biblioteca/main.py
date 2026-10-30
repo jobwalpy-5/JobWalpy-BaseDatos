@@ -1,14 +1,18 @@
 import sys
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from fastapi import FastAPI, Request, Cookie
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+from urllib.parse import urlparse
 
 load_dotenv()
+if not os.environ.get("SECRET_KEY"):
+    raise RuntimeError("Falta SECRET_KEY. Configúrala antes de iniciar JobWalpy.")
 
 from presentacion.rutas.jobs import router as jobs_router
 from presentacion.rutas.users import router as users_router
@@ -23,7 +27,41 @@ from nucleo.sesion_usuario import SesionFirmadaMiddleware
 
 
 app = FastAPI(title="JobWalpy", description="Plataforma de empleo")
-app.mount("/static", StaticFiles(directory=str(DIR_STATIC)), name="static")
+
+
+class PublicStaticFiles(StaticFiles):
+    """No expone documentos legales que pudieran quedar de versiones anteriores."""
+    async def get_response(self, path: str, scope):
+        normalized = path.replace("\\", "/").lstrip("/")
+        if normalized.startswith("uploads/docs/") or normalized == "uploads/docs":
+            return Response(status_code=404)
+        return await super().get_response(path, scope)
+
+
+app.mount("/static", PublicStaticFiles(directory=str(DIR_STATIC)), name="static")
+
+
+class SameOriginGuard:
+    """Rechaza formularios mutadores con origen cruzado como defensa CSRF adicional."""
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if scope.get("type") == "http" and scope.get("method") in {"POST", "PUT", "PATCH", "DELETE"}:
+            headers = {k.lower(): v for k, v in scope.get("headers", [])}
+            origin = headers.get(b"origin", b"").decode("latin-1")
+            host = headers.get(b"host", b"").decode("latin-1")
+            fetch_site = headers.get(b"sec-fetch-site", b"").decode("latin-1").lower()
+            cross_origin = bool(origin and urlparse(origin).netloc.lower() != host.lower())
+            if cross_origin or fetch_site == "cross-site":
+                response = Response("Solicitud rechazada por política de origen.", status_code=403)
+                await response(scope, receive, send)
+                return
+        await self.app(scope, receive, send)
+
+
+
+app.add_middleware(SameOriginGuard)
 app.add_middleware(SesionFirmadaMiddleware)
 
 app.include_router(jobs_router)
@@ -41,7 +79,7 @@ async def home(request: Request, user_id: str = Cookie(default=None)):
 
     stats = {
         "total_jobs":   len([j for j in all_jobs if j.get("active", True)]),
-        "total_users":  db.contar_usuarios_activos(),
+        "total_users":  db.contar_buscadores_activos(),
         "categories":   len(categories),
         "applications": len(db.get_applications()),
     }
@@ -54,9 +92,15 @@ async def home(request: Request, user_id: str = Cookie(default=None)):
 
     if user:
         all_users = db.get_users()
-        chattable_users = [u for u in all_users if str(u["id"]) != str(user_id)]
+        contact_ids = {
+            str(participant)
+            for conv in db.get_conversations_by_user(user_id)
+            for participant in conv.get("participants", [])
+            if str(participant) != str(user_id)
+        }
+        chattable_users = [u for u in all_users if str(u["id"]) in contact_ids]
 
-        if user.get("role") == "empleador":
+        if user.get("role") == "empleador" and user.get("verified_company"):
             recent_seekers = [u for u in all_users if u.get("role") == "buscador"][:6]
             posted_jobs    = [j for j in all_jobs if str(j.get("posted_by")) == str(user_id)]
         else:
