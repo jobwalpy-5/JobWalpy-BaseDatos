@@ -1,0 +1,30 @@
+{% extends "admin_base.html" %}
+{% block titulo %}Usuarios{% endblock %}
+{% block contenido %}
+<div class="admin-topbar">
+  <div>
+    <h1 class="admin-page-title">Gestión de Usuarios</h1>
+    <p class="admin-page-sub">Los filtros se aplican mientras escribes</p>
+  </div>
+</div>
+<div class="admin-content">
+  <form method="get" action="/admin/usuarios" class="admin-filter-bar"
+        hx-get="/admin/usuarios" hx-target="#resultado" hx-push-url="true"
+        hx-trigger="input changed delay:300ms" hx-indicator="#resultado">
+    <input type="text" name="search" value="{{ search }}" placeholder="Buscar por correo…" class="admin-filter-input" autocomplete="off"/>
+    <select name="rol" class="admin-filter-select">
+      <option value="">Todos los roles</option>
+      <option value="buscador" {% if rol=='buscador' %}selected{% endif %}>Buscador</option>
+      <option value="empleador" {% if rol=='empleador' %}selected{% endif %}>Empleador</option>
+    </select>
+    <select name="verificado" class="admin-filter-select">
+      <option value="">Correo: todos</option>
+      <option value="si" {% if verificado=='si' %}selected{% endif %}>Correo verificado</option>
+      <option value="no" {% if verificado=='no' %}selected{% endif %}>Correo sin verificar</option>
+    </select>
+    <noscript><button type="submit" class="btn btn-primary btn-sm">Filtrar</button></noscript>
+    <a href="/admin/usuarios" class="btn btn-outline btn-sm">Limpiar</a>
+  </form>
+  <div id="resultado">{% include "_admin_usuarios_lista.html" %}</div>
+</div>
+{% endblock %}

@@ -191,20 +191,7 @@ WHERE conversacion_id = 'uuid-a__uuid-b'
 -- Eliminar un mensaje (borrado suave — el texto real nunca se vuelve a mostrar)
 UPDATE mensajes SET eliminado = TRUE WHERE id = 1;
 
--- ------------------------------------------------------------
--- PORTAFOLIO
--- ------------------------------------------------------------
-
--- Agregar un elemento al portafolio de un candidato
-INSERT INTO portafolios (id, usuario_id, titulo, descripcion, archivo_url, creado_at)
-VALUES ('uuid-generado-por-python', 'uuid-del-candidato', 'Proyecto Backend', 'API en FastAPI', 'https://tu-endpoint-minio/jobwalpy-media/portfolios/uuid/x.pdf', '2026-09-02');
-
--- Ver el portafolio de un candidato
-SELECT * FROM portafolios WHERE usuario_id = 'uuid-del-candidato' ORDER BY creado_at DESC;
-
--- Eliminar un elemento del portafolio (solo si es realmente del dueño)
-DELETE FROM portafolios WHERE id = 'uuid-del-item' AND usuario_id = 'uuid-del-candidato';
-
+-- aqui se elimino la parte de portafolio
 -- ------------------------------------------------------------
 -- ELIMINACIÓN Y MANTENIMIENTO
 -- ------------------------------------------------------------

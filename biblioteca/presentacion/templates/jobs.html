@@ -159,7 +159,7 @@
         <p class="job-company">{{ job.company }}</p>
         <div class="job-meta">
           <span class="job-meta-item">📍 {{ job.location }}</span>
-          
+
         </div>
         <div class="job-footer">
           <span class="tag tag-soft">{{ job.category }}</span>
@@ -205,8 +205,6 @@ filterClose?.addEventListener('click', closeFilters);
 filterOverlay?.addEventListener('click', closeFilters);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeFilters(); });
 
-document.querySelectorAll('#filter-form select').forEach(sel => {
-  sel.addEventListener('change', () => document.getElementById('filter-form').submit());
-});
 </script>
+<script src="/static/js/jobs.js" defer></script>
 {% endblock %}

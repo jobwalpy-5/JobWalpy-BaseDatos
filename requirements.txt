@@ -1,8 +1,8 @@
 fastapi
-uvicorn
+uvicorn[standard]
 jinja2
 python-multipart
 psycopg[binary]
 python-dotenv
 email-validator
-minio
+tzdata

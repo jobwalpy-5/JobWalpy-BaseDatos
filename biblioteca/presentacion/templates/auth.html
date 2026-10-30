@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -42,7 +43,7 @@
           <input type="password" name="password" placeholder="Contraseña" required autocomplete="current-password" />
         </div>
 
-        <a href="#">¿Olvidaste tu contraseña?</a>
+        <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
 
         <button class="incognito" type="button" onclick="window.location.href='/jobs'">
           <ion-icon name="search-outline"></ion-icon>
@@ -437,3 +438,327 @@
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
 </html>
+=======
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% if show_register %}Registrarse{% else %}Iniciar sesión{% endif %} — JobWalpy</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=REM:ital,wght@0,100..900;1,100..900&family=Syne:wght@400;700;800&display=swap" rel="stylesheet" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
+  <link rel="stylesheet" href="/static/css/auth.css" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
+</head>
+<body>
+
+  <a href="/" class="floating-logo" aria-label="JobWalpy — Inicio">
+    <img class="brand-logo-image brand-logo-image--auth" src="/static/img/logo.png" alt="" width="48" height="48" />
+    <span class="logo-text">JobWalpy</span>
+  </a>
+
+
+  {% if error %}
+  <div class="server-alert">{{ error }}</div>
+  {% endif %}
+  {% if success %}
+  <div class="server-alert ok">{{ success }}</div>
+  {% endif %}
+
+  <div class="container {% if show_register %}toggle{% endif %}" id="container">
+
+    <!-- ── INICIAR SESIÓN ── -->
+    <div class="container-form">
+      <form class="sign-in" action="/login" method="post">
+        <input type="hidden" name="next" value="{{ next or '/' }}" />
+
+
+        <h1>Iniciar Sesión</h1>
+        <div class="social-networks">
+
+        </div>
+        <span>Use su correo y contraseña</span>
+
+        <div class="box-sign-in">
+          <ion-icon name="mail-outline"></ion-icon>
+          <input type="email" name="email" placeholder="Email" required maxlength="254"
+                 pattern="[^@\s]+@[^@\s]+\.[^@\s]{2,}"
+                 title="Escribe un correo válido, por ejemplo nombre@dominio.com"
+                 inputmode="email" autocapitalize="off" spellcheck="false"
+                 autocomplete="username" />
+        </div>
+
+        <div class="box-sign-in">
+          <ion-icon name="lock-closed-outline"></ion-icon>
+          <input type="password" id="login-password" name="password" placeholder="Contraseña" required
+                 autocomplete="current-password" />
+          <button type="button" class="toggle-pass" data-target="login-password"
+                  aria-label="Mostrar contraseña" aria-pressed="false">
+            <ion-icon name="eye-outline"></ion-icon>
+          </button>
+        </div>
+
+        <a href="/forgot-password">¿Olvidaste tu contraseña?</a>
+
+        <button class="incognito" type="button" onclick="window.location.href='/jobs'">
+          <ion-icon name="search-outline"></ion-icon>
+          Modo incógnito
+        </button>
+
+        <div class="button-wrap">
+          <button id="unclock-sign-in" type="submit">Iniciar sesión</button>
+        </div>
+        <p class="toggle-text">¿No tienes cuenta? <span id="btn-sign-up-mobile">Regístrate</span></p>
+        
+      </form>
+    </div>
+
+    <!-- ── REGISTRARSE (buscador o redirige a empleador) ── -->
+    <div class="container-form">
+      <div class="sign-up" id="register-panel">
+        <h1>Registrarse</h1>
+        <div class="social-networks">
+         
+        </div>
+        <span>Elige cómo quieres usar JobWalpy</span>
+
+        <!-- Selector de rol visual -->
+        <div class="role-selector" id="role-selector">
+          <button type="button" class="role-btn active" id="btn-buscador" onclick="selectRole('buscador')">
+            🔍 Busco empleo
+          </button>
+          <button type="button" class="role-btn" id="btn-empleador" onclick="selectRole('empleador')">
+            🏢 Soy empleador
+          </button>
+        </div>
+
+        <!-- Formulario buscador -->
+        <form id="form-buscador" class="role-form" action="/register" method="post">
+          <input type="hidden" name="role" value="buscador" />
+
+          <div class="box-sign-up">
+            <ion-icon name="person-outline"></ion-icon>
+            <input id="register-first-name" type="text" name="first_name" placeholder="Nombres" required minlength="1" maxlength="60" autocomplete="given-name" />
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="person-outline"></ion-icon>
+            <input id="register-last-name" type="text" name="last_name" placeholder="Apellidos" required minlength="1" maxlength="60" autocomplete="family-name" />
+          </div>
+          <div class="box-sign-up">
+            <label for="document-type">Tipo de documento</label>
+            <select id="document-type" name="document_type" required>
+              <option value="">Selecciona un documento</option>
+              <option value="CC">Cédula de ciudadanía</option>
+              <option value="CE">Cédula de extranjería</option>
+              <option value="PPT">Permiso por Protección Temporal (PPT)</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="id-card-outline"></ion-icon>
+            <input id="document-number" type="text" name="document_number" placeholder="Número de documento" required minlength="5" maxlength="20" pattern="[A-Za-z0-9 .-]{5,25}" autocomplete="off" />
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="mail-outline"></ion-icon>
+            <input type="email" name="email" placeholder="Email" required maxlength="254" autocomplete="email" />
+          </div>
+          <div class="box-sign-up">
+            <ion-icon name="lock-closed-outline"></ion-icon>
+            <input type="password" id="register-password" name="password" placeholder="Contraseña (8-128 caracteres, mayúscula, número, especial)" required minlength="8" maxlength="128" autocomplete="new-password" />
+            <button type="button" class="toggle-pass" data-target="register-password"
+                    aria-label="Mostrar contraseña" aria-pressed="false">
+              <ion-icon name="eye-outline"></ion-icon>
+            </button>
+            </div>
+          
+          <!-- Ubicación: departamento completo o ciudad principal de Colombia -->
+          <div class="box-sign-up location-select-wrap">
+            <ion-icon name="location-outline"></ion-icon>
+            <select name="location" id="register-location" aria-label="Departamento o ciudad de Colombia">
+              <option value="">Departamento o ciudad (opcional)</option>
+              <optgroup label="Amazonas">
+                <option value="Amazonas">Todo el departamento: Amazonas</option><option value="Leticia, Amazonas">Leticia</option>
+              </optgroup>
+              <optgroup label="Antioquia">
+                <option value="Antioquia">Todo el departamento: Antioquia</option><option value="Medellín, Antioquia">Medellín</option><option value="Bello, Antioquia">Bello</option><option value="Envigado, Antioquia">Envigado</option><option value="Itagüí, Antioquia">Itagüí</option><option value="Apartadó, Antioquia">Apartadó</option><option value="Rionegro, Antioquia">Rionegro</option><option value="Turbo, Antioquia">Turbo</option>
+              </optgroup>
+              <optgroup label="Arauca">
+                <option value="Arauca">Todo el departamento: Arauca</option><option value="Arauca, Arauca">Arauca</option><option value="Saravena, Arauca">Saravena</option>
+              </optgroup>
+              <optgroup label="Atlántico">
+                <option value="Atlántico">Todo el departamento: Atlántico</option><option value="Barranquilla, Atlántico">Barranquilla</option><option value="Soledad, Atlántico">Soledad</option><option value="Malambo, Atlántico">Malambo</option>
+              </optgroup>
+              <optgroup label="Bogotá D.C.">
+                <option value="Bogotá, D.C.">Bogotá D.C.</option>
+              </optgroup>
+              <optgroup label="Bolívar">
+                <option value="Bolívar">Todo el departamento: Bolívar</option><option value="Cartagena, Bolívar">Cartagena</option><option value="Magangué, Bolívar">Magangué</option><option value="Turbaco, Bolívar">Turbaco</option>
+              </optgroup>
+              <optgroup label="Boyacá">
+                <option value="Boyacá">Todo el departamento: Boyacá</option><option value="Tunja, Boyacá">Tunja</option><option value="Duitama, Boyacá">Duitama</option><option value="Sogamoso, Boyacá">Sogamoso</option>
+              </optgroup>
+              <optgroup label="Caldas">
+                <option value="Caldas">Todo el departamento: Caldas</option><option value="Manizales, Caldas">Manizales</option><option value="La Dorada, Caldas">La Dorada</option><option value="Villamaría, Caldas">Villamaría</option>
+              </optgroup>
+              <optgroup label="Caquetá">
+                <option value="Caquetá">Todo el departamento: Caquetá</option><option value="Florencia, Caquetá">Florencia</option>
+              </optgroup>
+              <optgroup label="Casanare">
+                <option value="Casanare">Todo el departamento: Casanare</option><option value="Yopal, Casanare">Yopal</option><option value="Aguazul, Casanare">Aguazul</option>
+              </optgroup>
+              <optgroup label="Cauca">
+                <option value="Cauca">Todo el departamento: Cauca</option><option value="Popayán, Cauca">Popayán</option><option value="Santander de Quilichao, Cauca">Santander de Quilichao</option>
+              </optgroup>
+              <optgroup label="Cesar">
+                <option value="Cesar">Todo el departamento: Cesar</option><option value="Valledupar, Cesar">Valledupar</option><option value="Aguachica, Cesar">Aguachica</option>
+              </optgroup>
+              <optgroup label="Chocó">
+                <option value="Chocó">Todo el departamento: Chocó</option><option value="Quibdó, Chocó">Quibdó</option><option value="Istmina, Chocó">Istmina</option>
+              </optgroup>
+              <optgroup label="Córdoba">
+                <option value="Córdoba">Todo el departamento: Córdoba</option><option value="Montería, Córdoba">Montería</option><option value="Lorica, Córdoba">Lorica</option><option value="Sahagún, Córdoba">Sahagún</option>
+              </optgroup>
+              <optgroup label="Cundinamarca">
+                <option value="Cundinamarca">Todo el departamento: Cundinamarca</option><option value="Soacha, Cundinamarca">Soacha</option><option value="Girardot, Cundinamarca">Girardot</option><option value="Facatativá, Cundinamarca">Facatativá</option><option value="Zipaquirá, Cundinamarca">Zipaquirá</option><option value="Chía, Cundinamarca">Chía</option>
+              </optgroup>
+              <optgroup label="Guainía">
+                <option value="Guainía">Todo el departamento: Guainía</option><option value="Inírida, Guainía">Inírida</option>
+              </optgroup>
+              <optgroup label="Guaviare">
+                <option value="Guaviare">Todo el departamento: Guaviare</option><option value="San José del Guaviare, Guaviare">San José del Guaviare</option>
+              </optgroup>
+              <optgroup label="Huila">
+                <option value="Huila">Todo el departamento: Huila</option><option value="Neiva, Huila">Neiva</option><option value="Pitalito, Huila">Pitalito</option>
+              </optgroup>
+              <optgroup label="La Guajira">
+                <option value="La Guajira">Todo el departamento: La Guajira</option><option value="Riohacha, La Guajira">Riohacha</option><option value="Maicao, La Guajira">Maicao</option>
+              </optgroup>
+              <optgroup label="Magdalena">
+                <option value="Magdalena">Todo el departamento: Magdalena</option><option value="Santa Marta, Magdalena">Santa Marta</option><option value="Ciénaga, Magdalena">Ciénaga</option>
+              </optgroup>
+              <optgroup label="Meta">
+                <option value="Meta">Todo el departamento: Meta</option><option value="Villavicencio, Meta">Villavicencio</option><option value="Acacías, Meta">Acacías</option>
+              </optgroup>
+              <optgroup label="Nariño">
+                <option value="Nariño">Todo el departamento: Nariño</option><option value="Pasto, Nariño">Pasto</option><option value="Ipiales, Nariño">Ipiales</option><option value="Tumaco, Nariño">Tumaco</option>
+              </optgroup>
+              <optgroup label="Norte de Santander">
+                <option value="Norte de Santander">Todo el departamento: Norte de Santander</option><option value="Cúcuta, Norte de Santander">Cúcuta</option><option value="Ocaña, Norte de Santander">Ocaña</option><option value="Pamplona, Norte de Santander">Pamplona</option>
+              </optgroup>
+              <optgroup label="Putumayo">
+                <option value="Putumayo">Todo el departamento: Putumayo</option><option value="Mocoa, Putumayo">Mocoa</option><option value="Puerto Asís, Putumayo">Puerto Asís</option>
+              </optgroup>
+              <optgroup label="Quindío">
+                <option value="Quindío">Todo el departamento: Quindío</option><option value="Armenia, Quindío">Armenia</option><option value="Calarcá, Quindío">Calarcá</option>
+              </optgroup>
+              <optgroup label="Risaralda">
+                <option value="Risaralda">Todo el departamento: Risaralda</option><option value="Pereira, Risaralda">Pereira</option><option value="Dosquebradas, Risaralda">Dosquebradas</option><option value="Santa Rosa de Cabal, Risaralda">Santa Rosa de Cabal</option>
+              </optgroup>
+              <optgroup label="San Andrés, Providencia y Santa Catalina">
+                <option value="San Andrés, Providencia y Santa Catalina">Todo el departamento: San Andrés</option><option value="San Andrés, San Andrés">San Andrés</option>
+              </optgroup>
+              <optgroup label="Santander">
+                <option value="Santander">Todo el departamento: Santander</option><option value="Bucaramanga, Santander">Bucaramanga</option><option value="Floridablanca, Santander">Floridablanca</option><option value="Girón, Santander">Girón</option><option value="Piedecuesta, Santander">Piedecuesta</option><option value="Barrancabermeja, Santander">Barrancabermeja</option>
+              </optgroup>
+              <optgroup label="Sucre">
+                <option value="Sucre">Todo el departamento: Sucre</option><option value="Sincelejo, Sucre">Sincelejo</option><option value="Corozal, Sucre">Corozal</option>
+              </optgroup>
+              <optgroup label="Tolima">
+                <option value="Tolima">Todo el departamento: Tolima</option><option value="Ibagué, Tolima">Ibagué</option><option value="El Espinal, Tolima">El Espinal</option>
+              </optgroup>
+              <optgroup label="Valle del Cauca">
+                <option value="Valle del Cauca">Todo el departamento: Valle del Cauca</option><option value="Cali, Valle del Cauca">Cali</option><option value="Palmira, Valle del Cauca">Palmira</option><option value="Buenaventura, Valle del Cauca">Buenaventura</option><option value="Tuluá, Valle del Cauca">Tuluá</option><option value="Buga, Valle del Cauca">Buga</option><option value="Cartago, Valle del Cauca">Cartago</option><option value="Jamundí, Valle del Cauca">Jamundí</option>
+              </optgroup>
+              <optgroup label="Vaupés">
+                <option value="Vaupés">Todo el departamento: Vaupés</option><option value="Mitú, Vaupés">Mitú</option>
+              </optgroup>
+              <optgroup label="Vichada">
+                <option value="Vichada">Todo el departamento: Vichada</option><option value="Puerto Carreño, Vichada">Puerto Carreño</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="button-wrap">
+            <button type="submit">Crear cuenta</button>
+          </div>
+        </form>
+        
+          <!-- Panel empleador: redirige al formulario completo -->
+        <div id="panel-empleador" class="role-form" style="display:none; text-align:center; padding: 16px 0;">
+          <p style="font-size:14px;color:#444e5e;margin-bottom:20px;line-height:1.6;">
+            Para publicar empleos necesitamos verificar tu empresa.<br/>
+            El registro toma 3 minutos y requiere datos legales básicos.
+          </p>
+          <a href="/register/employer" class="employer-cta-btn">
+            Registrar mi empresa →
+          </a>
+          <p style="font-size:12px;color:#9ca3af;margin-top:14px;">
+            Tu cuenta será revisada en 1-2 días hábiles.
+          </p>
+        </div>
+
+        <p class="toggle-text">¿Ya tienes cuenta? <span id="btn-sign-in-mobile">Inicia sesión</span></p>
+      </div>
+    </div>
+
+    <!-- ── PANEL BIENVENIDA ── -->
+    <div class="container-welcome">
+      <div class="welcome-sign-up welcome">
+        <h3>¡Bienvenido!</h3>
+        <p>Ingrese sus datos personales para usar todas las funciones del sitio</p>
+        <button class="button" id="btn-sign-up">Registrarse</button>
+      </div>
+      <div class="welcome-sign-in welcome">
+        <h3>¡Hola!</h3>
+        <p>Regístrese con sus datos personales para usar todas las funciones del sitio</p>
+        <button class="button" id="btn-sign-in">Iniciar Sesión</button>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .role-form { width: 100%; }
+    .employer-cta-btn {
+      display: inline-block;
+      padding: 12px 28px;
+      background: linear-gradient(to right, #012f5e, #0a4a8a);
+      color: #fff;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 14px;
+      text-decoration: none;
+      transition: opacity .2s, transform .2s;
+    }
+    .employer-cta-btn:hover { opacity: .88; transform: translateY(-1px); }
+  </style>
+
+  <script src="/static/js/auth.js"></script>
+  <script>
+    // Mostrar / ocultar contraseña
+    document.querySelectorAll('.toggle-pass').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const input = document.getElementById(btn.dataset.target);
+        const mostrar = input.type === 'password';
+        input.type = mostrar ? 'text' : 'password';
+        btn.setAttribute('aria-pressed', String(mostrar));
+        btn.setAttribute('aria-label', mostrar ? 'Ocultar contraseña' : 'Mostrar contraseña');
+        btn.querySelector('ion-icon').setAttribute('name', mostrar ? 'eye-off-outline' : 'eye-outline');
+      });
+    });
+
+    function selectRole(role) {
+      document.getElementById('btn-buscador').classList.toggle('active', role === 'buscador');
+      document.getElementById('btn-empleador').classList.toggle('active', role === 'empleador');
+      document.getElementById('form-buscador').style.display  = role === 'buscador' ? 'block' : 'none';
+      document.getElementById('panel-empleador').style.display = role === 'empleador' ? 'block' : 'none';
+    }
+  </script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  <script src="/static/js/theme.js"></script>
+</body>
+</html>
+>>>>>>> ac893bf9c4d668246e6fdbc7522d12c1a89ae357

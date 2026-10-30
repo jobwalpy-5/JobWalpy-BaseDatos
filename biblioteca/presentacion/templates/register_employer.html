@@ -7,7 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
   <link rel="stylesheet" href="/static/css/auth.css" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
   <style>
     /* ── Overrides para formulario largo ── */
     body { background: var(--bg-page, #f5efeb); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 40px 16px 80px; }
@@ -169,8 +171,8 @@
 </head>
 <body>
 
-  <a href="/" class="floating-logo" style="position:fixed;top:20px;left:28px;display:flex;align-items:center;gap:8px;text-decoration:none;z-index:10;">
-    <span class="logo-box">JW</span>
+  <a href="/" class="floating-logo" aria-label="JobWalpy — Inicio" style="position:fixed;top:20px;left:28px;display:flex;align-items:center;gap:8px;text-decoration:none;z-index:10;">
+    <img class="brand-logo-image brand-logo-image--auth" src="/static/img/logo.png" alt="" width="48" height="48" />
     <span class="logo-text">JobWalpy</span>
   </a>
 
@@ -196,23 +198,23 @@
       <div class="form-row">
         <div class="form-group">
           <label>Nombre completo del reclutador *</label>
-          <input type="text" name="contact_name" required placeholder="Ej. María Rodríguez" value="{{ form.contact_name if form else '' }}" />
+          <input type="text" name="contact_name" required placeholder="Ej. María Rodríguez" value="{{ form.contact_name if form else '' }}" maxlength="100" />
         </div>
         <div class="form-group">
           <label>Teléfono / Celular *</label>
-          <input type="tel" name="phone" required placeholder="+57 300 000 0000" value="{{ form.phone if form else '' }}" />
+          <input type="tel" name="phone" required placeholder="+57 300 000 0000" value="{{ form.phone if form else '' }}" maxlength="30" />
         </div>
       </div>
 
       <div class="form-group">
         <label>Correo corporativo *</label>
-        <input type="email" name="email" required placeholder="reclutador@tuempresa.com" value="{{ form.email if form else '' }}" />
+        <input type="email" name="email" required placeholder="reclutador@tuempresa.com" value="{{ form.email if form else '' }}" maxlength="254" />
         <small>No se aceptan correos de Gmail, Outlook, Yahoo ni similares.</small>
       </div>
 
       <div class="form-group">
         <label>Contraseña *</label>
-        <input type="password" name="password" id="emp-password" required placeholder="Mínimo 8 caracteres" />
+        <input type="password" name="password" id="emp-password" required minlength="8" maxlength="128" autocomplete="new-password" placeholder="Mínimo 8 caracteres" maxlength="128" />
         <ul class="password-hints" id="pwd-hints">
           <li id="h-len">Mínimo 8 caracteres</li>
           <li id="h-upper">Al menos una mayúscula</li>
@@ -227,19 +229,19 @@
       <div class="form-row">
         <div class="form-group">
           <label>Nombre comercial *</label>
-          <input type="text" name="company_name" required placeholder="Ej. Clínica de la Sabana" value="{{ form.company_name if form else '' }}" />
+          <input type="text" name="company_name" required placeholder="Ej. Clínica de la Sabana" value="{{ form.company_name if form else '' }}" maxlength="120" />
           <small>Nombre que verán los candidatos.</small>
         </div>
         <div class="form-group">
           <label>Razón social *</label>
-          <input type="text" name="legal_name" required placeholder="Ej. Inversiones Médicas S.A.S." value="{{ form.legal_name if form else '' }}" />
+          <input type="text" name="legal_name" required placeholder="Ej. Inversiones Médicas S.A.S." value="{{ form.legal_name if form else '' }}" maxlength="160" />
         </div>
       </div>
 
       <div class="form-row">
         <div class="form-group">
           <label>NIT / RUT / RFC *</label>
-          <input type="text" name="tax_id" required placeholder="Ej. 900.123.456-7" value="{{ form.tax_id if form else '' }}" />
+          <input type="text" name="tax_id" required placeholder="Ej. 900.123.456-7" value="{{ form.tax_id if form else '' }}" maxlength="30" />
         </div>
         <div class="form-group">
           <label>Industria / Sector *</label>
@@ -255,7 +257,7 @@
       <div class="form-row">
         <div class="form-group">
           <label>Ciudad / Ubicación *</label>
-          <input type="text" name="location" required placeholder="Ej. Bogotá, Colombia" value="{{ form.location if form else '' }}" />
+          <input type="text" name="location" required placeholder="Ej. Bogotá, Colombia" value="{{ form.location if form else '' }}" maxlength="100" />
         </div>
         <div class="form-group">
           <label>Tamaño de la empresa</label>
@@ -270,12 +272,12 @@
 
       <div class="form-group">
         <label>Dirección física *</label>
-        <input type="text" name="address" required placeholder="Calle 123 # 45-67, Bogotá" value="{{ form.address if form else '' }}" />
+        <input type="text" name="address" required placeholder="Calle 123 # 45-67, Bogotá" value="{{ form.address if form else '' }}" maxlength="200" />
       </div>
 
       <div class="form-group">
         <label>Sitio web o LinkedIn corporativo</label>
-        <input type="url" name="website" placeholder="https://tuempresa.com" value="{{ form.website if form else '' }}" />
+        <input type="url" name="website" placeholder="https://tuempresa.com" value="{{ form.website if form else '' }}" maxlength="300" />
         <small>Ayuda a verificar la legitimidad de la empresa.</small>
       </div>
 
@@ -288,9 +290,9 @@
           <div class="upload-icon">📎</div>
           <p><strong>Haz clic para subir</strong> o arrastra el archivo aquí</p>
           <p id="file-name" style="margin-top:6px;color:#012f5e;font-weight:600;"></p>
-          <input type="file" id="doc-upload" name="document" accept=".pdf" onchange="document.getElementById('file-name').textContent = this.files[0]?.name || ''" />
+          <input type="file" id="doc-upload" name="document" accept=".pdf" disabled aria-describedby="private-doc-note" />
         </div>
-        <small>Opcional pero recomendado. Acelera el proceso de verificación.</small>
+        <small id="private-doc-note">La carga está temporalmente deshabilitada hasta configurar almacenamiento privado seguro. Puedes registrar la empresa sin adjuntar el archivo.</small>
       </div>
 
       <div class="notice">
@@ -318,5 +320,6 @@
   </script>
 
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script src="/static/js/theme.js"></script>
 </body>
 </html>

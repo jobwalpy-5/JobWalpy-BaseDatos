@@ -1,0 +1,6 @@
+<div id="admin-stats" class="admin-stats-grid"{% if oob %} hx-swap-oob="true"{% endif %}>
+  <div class="admin-stat-card"><div class="admin-stat-label">Total usuarios</div><div class="admin-stat-value">{{ stats.total_usuarios or 0 }}</div></div>
+  <div class="admin-stat-card"><div class="admin-stat-label">Empresas aprobadas</div><div class="admin-stat-value" style="color:var(--success);">{{ stats.empresas_activas or 0 }}</div></div>
+  <div class="admin-stat-card"><div class="admin-stat-label">Pendientes</div><div class="admin-stat-value" style="color:var(--warning);">{{ stats.empresas_pendientes or 0 }}</div></div>
+  <div class="admin-stat-card"><div class="admin-stat-label">Empleos activos</div><div class="admin-stat-value" style="color:var(--primary-light);">{{ stats.empleos_activos or 0 }}</div></div>
+</div>

@@ -1,10 +1,5 @@
 """
-CAPA 2 · LÓGICA — repositorio.
 
-Este es el ÚNICO archivo del proyecto que contiene SQL.
-
-OJO: este archivo NO crea tablas. Las tablas ya existen en Neon; cómo deben
-verse está documentado en BD/esquema.sql.
 
 Reglas de este archivo:
   • Solo habla con la base de datos: SELECT / INSERT / UPDATE / DELETE.
@@ -40,6 +35,12 @@ def _fila_a_usuario(conn, row: dict) -> dict:
         "active": bool(row["activo"]),
         "created_at": row["fecha_registro"],
     }
+
+    if row["rol"] == "admin":
+        base.update({"name": "Administrador", "phone": "", "location": "", "bio": "",
+                     "avatar": "AD", "avatar_color": "#4f46e5", "verified_company": False})
+        return base
+    
     if row["rol"] == "buscador":
         p = conn.execute(
             "SELECT * FROM perfiles_buscador WHERE usuario_id = %s", (row["id"],)
@@ -49,6 +50,8 @@ def _fila_a_usuario(conn, row: dict) -> dict:
             "bio": p["bio"], "skills": json.loads(p["skills"] or "[]"),
             "experience": p["experiencia"], "education": p["educacion"],
             "cv_url": p["cv_url"], "avatar": p["avatar"], "avatar_color": p["avatar_color"],
+            "profile_photo_url": p["profile_photo_url"] or "",
+            "presentation_video_url": p["presentation_video_url"] or "",
             "verified_company": False,
         })
     else:
@@ -204,7 +207,7 @@ def actualizar_perfil(user_id: str, rol: str, data: dict) -> None:
         if rol == "buscador":
             campos = {"name": "nombre", "bio": "bio", "location": "ubicacion",
                       "phone": "telefono", "experience": "experiencia",
-                      "education": "educacion", "cv_url": "cv_url"}
+                      "education": "educacion", "cv_url": "cv_url", "profile_photo_url": "profile_photo_url"}
             sets, valores = [], []
             for k, columna in campos.items():
                 if k in data and data[k] is not None:
@@ -256,10 +259,11 @@ def desactivar_usuario(user_id: str) -> bool:
 def _job_row_to_dict(row: dict) -> dict:
     return {
         "id": row["id"], "title": row["titulo"], "company": row["empresa"],
-        "location": row["ubicacion"], "salary_min": row["salario_min"], "salary_max": row["salario_max"],
+        "location": row["ubicacion"],
         "type": row["tipo"], "category": row["categoria"], "description": row["descripcion"],
         "requirements": json.loads(row["requisitos"] or "[]"),
         "benefits": json.loads(row["beneficios"] or "[]"),
+        "salary_min": row["salario_min"], "salary_max": row["salario_max"],
         "posted_by": row["publicado_por"], "posted_at": row["publicado_at"],
         "active": bool(row["activo"]),
     }
@@ -290,8 +294,8 @@ def insertar_empleo(job_id: str, job: dict) -> None:
             "INSERT INTO empleos (id, titulo, empresa, ubicacion, salario_min, salario_max, tipo, "
             "categoria, descripcion, requisitos, beneficios, publicado_por, publicado_at, activo) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-            (job_id, job["title"], job["company"], job["location"], job["salary_min"], job["salary_max"],
-             job["type"], job["category"], job["description"], json.dumps(job.get("requirements", [])),
+            (job_id, job["title"], job["company"], job["location"],
+             job.get("salary_min", 0), job.get("salary_max", 0), job["type"], job["category"], job["description"], json.dumps(job.get("requirements", [])),
              json.dumps(job.get("benefits", [])), job["posted_by"], job["posted_at"],
              job.get("active", True)),
         )
@@ -524,3 +528,296 @@ def aplicar_restablecer_password(user_id: str, password_hash: str) -> None:
             "DELETE FROM tokens_restablecer WHERE usuario_id = %s",
             (str(user_id),),
         )
+
+
+# ── ADMIN ─────────────────────────────────────────────────────────────────────
+
+def contar_resumen() -> dict:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT (SELECT COUNT(*) FROM usuarios WHERE rol='buscador') AS buscadores, "
+            "(SELECT COUNT(*) FROM usuarios WHERE rol='empleador') AS empleadores, "
+            "(SELECT COUNT(*) FROM empleos) AS empleos"
+        ).fetchone()
+
+
+def listar_empleadores_admin() -> list:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT u.id, u.email, u.activo, p.company_name, p.legal_name, p.tax_id, "
+            "p.documento_path, p.verificado_legal "
+            "FROM usuarios u JOIN perfiles_empleador p ON p.usuario_id = u.id "
+            "ORDER BY p.verificado_legal, u.fecha_registro DESC"
+        ).fetchall()
+
+
+def set_verificado_empleador(user_id: str, valor: bool) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE perfiles_empleador SET verificado_legal = %s WHERE usuario_id = %s",
+            (valor, user_id),
+        )
+
+
+def set_activo_usuario(user_id: str, activo: bool) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE usuarios SET activo = %s WHERE id = %s",
+            (activo, user_id),
+        )
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ADMINISTRADORES — solo SQL, ninguna decisión
+# ══════════════════════════════════════════════════════════════════════════════
+
+def buscar_admin_por_correo(correo: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, nombre, correo, password_hash, nivel, activo "
+            "FROM administradores WHERE correo = %s",
+            (correo,),
+        ).fetchone()
+
+
+def buscar_admin_por_id(admin_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, nombre, correo, nivel, activo FROM administradores "
+            "WHERE id = %s AND activo = TRUE",
+            (str(admin_id),),
+        ).fetchone()
+
+
+def registrar_acceso_admin(admin_id: str, cuando: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE administradores SET ultimo_acceso = %s WHERE id = %s",
+            (cuando, admin_id),
+        )
+
+
+def insertar_admin(
+    admin_id: str,
+    nombre: str,
+    correo: str,
+    password_hash: str,
+    nivel: str,
+    creado_en: str,
+) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO administradores "
+            "(id, nombre, correo, password_hash, nivel, creado_en) "
+            "VALUES (%s, %s, %s, %s, %s, %s)",
+            (admin_id, nombre, correo, password_hash, nivel, creado_en),
+        )
+
+
+def existe_usuario_con_correo(correo: str) -> bool:
+    with get_conn() as conn:
+        return (
+            conn.execute(
+                "SELECT 1 FROM usuarios WHERE email = %s",
+                (correo,),
+            ).fetchone()
+            is not None
+        )
+
+
+# ── Lecturas del panel ────────────────────────────────────────────────────────
+
+def admin_estadisticas() -> dict:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT "
+            " (SELECT COUNT(*) FROM usuarios) AS total_usuarios, "
+            " (SELECT COUNT(*) FROM usuarios u JOIN perfiles_empleador p ON p.usuario_id = u.id "
+            "   WHERE u.activo AND p.verificado_legal) AS empresas_activas, "
+            " (SELECT COUNT(*) FROM usuarios u JOIN perfiles_empleador p ON p.usuario_id = u.id "
+            "   WHERE u.activo AND NOT p.verificado_legal) AS empresas_pendientes, "
+            " (SELECT COUNT(*) FROM empleos WHERE activo) AS empleos_activos"
+        ).fetchone()
+
+
+def admin_usuarios_recientes(limite: int = 5) -> list:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, email AS correo, rol, verificado, activo, fecha_registro "
+            "FROM usuarios ORDER BY fecha_registro DESC, id LIMIT %s",
+            (limite,),
+        ).fetchall()
+
+
+def admin_empleos_recientes(limite: int = 5) -> list:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, titulo, empresa, activo, publicado_at "
+            "FROM empleos ORDER BY publicado_at DESC, id LIMIT %s",
+            (limite,),
+        ).fetchall()
+
+
+_SELECT_EMPLEADORES = (
+    "SELECT u.id, u.email AS correo, u.activo, u.fecha_registro, "
+    "       p.verificado_legal AS verificado, p.contact_name, p.company_name, p.legal_name, "
+    "       p.tax_id, p.industry, p.ubicacion AS location, p.documento_path, p.usuario_id "
+    "FROM usuarios u JOIN perfiles_empleador p ON p.usuario_id = u.id "
+    "WHERE u.rol = 'empleador'"
+)
+
+
+def admin_empleadores_pendientes() -> list:
+    with get_conn() as conn:
+        return conn.execute(
+            _SELECT_EMPLEADORES
+            + " AND u.activo AND NOT p.verificado_legal "
+            + "ORDER BY u.fecha_registro DESC"
+        ).fetchall()
+
+
+def admin_listar_empleadores(estado: str = "") -> list:
+    sql = _SELECT_EMPLEADORES
+
+    if estado == "pendiente":
+        sql += " AND u.activo AND NOT p.verificado_legal"
+    elif estado == "aprobado":
+        sql += " AND u.activo AND p.verificado_legal"
+    elif estado == "rechazado":
+        sql += " AND NOT u.activo"
+
+    sql += " ORDER BY u.fecha_registro DESC"
+
+    with get_conn() as conn:
+        return conn.execute(sql).fetchall()
+
+
+def admin_listar_usuarios(
+    busqueda: str = "",
+    rol: str = "",
+    verificado: str = "",
+) -> list:
+    sql = (
+        "SELECT id, email AS correo, rol, verificado, activo, fecha_registro "
+        "FROM usuarios WHERE 1=1"
+    )
+    params = []
+
+    if busqueda:
+        sql += " AND email ILIKE %s"
+        params.append(f"%{busqueda}%")
+
+    if rol:
+        sql += " AND rol = %s"
+        params.append(rol)
+
+    if verificado == "si":
+        sql += " AND verificado = TRUE"
+    elif verificado == "no":
+        sql += " AND verificado = FALSE"
+
+    sql += " ORDER BY fecha_registro DESC, id"
+
+    with get_conn() as conn:
+        return conn.execute(sql, params).fetchall()
+
+
+def admin_listar_empleos(busqueda: str = "") -> list:
+    sql = (
+        "SELECT id, titulo, empresa, ubicacion, activo, publicado_at "
+        "FROM empleos WHERE 1=1"
+    )
+    params = []
+
+    if busqueda:
+        sql += " AND (titulo ILIKE %s OR empresa ILIKE %s)"
+        params.extend([f"%{busqueda}%", f"%{busqueda}%"])
+
+    sql += " ORDER BY publicado_at DESC, id"
+
+    with get_conn() as conn:
+        return conn.execute(sql, params).fetchall()
+
+
+# ── Acciones del panel ────────────────────────────────────────────────────────
+
+def admin_marcar_correo_verificado(user_id: str) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "UPDATE usuarios SET verificado = TRUE WHERE id = %s",
+            (user_id,),
+        ).rowcount > 0
+
+
+def admin_alternar_activo_usuario(user_id: str) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "UPDATE usuarios SET activo = NOT activo WHERE id = %s",
+            (user_id,),
+        ).rowcount > 0
+
+
+def admin_poner_activo_usuario(user_id: str, activo: bool) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "UPDATE usuarios SET activo = %s WHERE id = %s",
+            (activo, user_id),
+        ).rowcount > 0
+
+
+def admin_poner_verificado_legal(user_id: str, valor: bool) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "UPDATE perfiles_empleador SET verificado_legal = %s WHERE usuario_id = %s",
+            (valor, user_id),
+        ).rowcount > 0
+
+
+def admin_borrar_usuario(user_id: str) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "DELETE FROM usuarios WHERE id = %s",
+            (user_id,),
+        ).rowcount > 0
+
+
+def admin_alternar_activo_empleo(job_id: str) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "UPDATE empleos SET activo = NOT activo WHERE id = %s",
+            (job_id,),
+        ).rowcount > 0
+
+
+def admin_borrar_empleo(job_id: str) -> bool:
+    with get_conn() as conn:
+        return conn.execute(
+            "DELETE FROM empleos WHERE id = %s",
+            (job_id,),
+        ).rowcount > 0
+
+
+def admin_obtener_usuario(user_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, email AS correo, rol, verificado, activo, fecha_registro "
+            "FROM usuarios WHERE id = %s",
+            (str(user_id),),
+        ).fetchone()
+
+
+def admin_obtener_empleador(user_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            _SELECT_EMPLEADORES + " AND u.id = %s",
+            (str(user_id),),
+        ).fetchone()
+
+
+def admin_obtener_empleo(job_id: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            "SELECT id, titulo, empresa, ubicacion, activo, publicado_at "
+            "FROM empleos WHERE id = %s",
+            (job_id,),
+        ).fetchone()

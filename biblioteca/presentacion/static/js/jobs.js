@@ -1,4 +1,4 @@
-// ── JOBS PAGE ─────────────────────────────────────────────────────────────────
+// ── JOBS PAGE ───────────────────────────────────────────────────────────────
 
 // Auto-submit filter form on select change
 (function () {
@@ -15,11 +15,11 @@
 
   // Highlight active filters
   const urlParams = new URLSearchParams(window.location.search);
-  const activeFilters = ["search", "category", "type"].filter(
+  const activeFilters = ["search", "category", "type", "location", "skills", "experience"].filter(
     (k) => urlParams.get(k)
   );
   if (activeFilters.length > 0) {
-    const clearBtn = document.querySelector('a[href="/jobs"]');
+    const clearBtn = document.querySelector(".filters-buttons .clear-btn");
     if (clearBtn) {
       clearBtn.textContent = `Limpiar (${activeFilters.length})`;
       clearBtn.style.color = "var(--accent)";
@@ -30,6 +30,7 @@
   // Animate job cards on load
   const cards = document.querySelectorAll(".job-card");
   cards.forEach((card, i) => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     card.style.opacity = "0";
     card.style.transform = "translateY(16px)";
     card.style.transition = `opacity .3s ease ${i * 50}ms, transform .3s ease ${i * 50}ms`;

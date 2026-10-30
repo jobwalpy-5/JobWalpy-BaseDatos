@@ -1,0 +1,20 @@
+<tr id="usuario-{{ u.id }}">
+  <td>{{ u.correo }}</td>
+  <td><span class="tag" style="background:{% if u.rol=='empleador' %}rgba(42,149,255,0.1){% else %}rgba(16,185,129,0.1){% endif %};color:{% if u.rol=='empleador' %}#0a4a8a{% else %}#065f46{% endif %};">{{ u.rol }}</span></td>
+  <td><span class="tag" style="background:{% if u.verificado %}rgba(16,185,129,0.1){% else %}rgba(245,158,11,0.1){% endif %};color:{% if u.verificado %}#065f46{% else %}#92400e{% endif %};">{% if u.verificado %}✓ Sí{% else %}No{% endif %}</span></td>
+  <td><span class="tag" style="background:{% if u.activo %}rgba(16,185,129,0.1){% else %}rgba(239,68,68,0.1){% endif %};color:{% if u.activo %}#065f46{% else %}#b91c1c{% endif %};">{% if u.activo %}Activo{% else %}Suspendido{% endif %}</span></td>
+  <td style="color:var(--text-muted);font-size:13px;">{{ u.fecha_registro[:10] if u.fecha_registro else '—' }}</td>
+  <td>
+    <div class="admin-acciones">
+      {% if admin.nivel != 'soporte' %}
+        {% if not u.verificado %}
+        <button class="admin-btn admin-btn-green" hx-post="/admin/usuarios/{{ u.id }}/verificar" hx-target="#usuario-{{ u.id }}" hx-swap="outerHTML">✓ Marcar correo verificado</button>
+        {% endif %}
+        <button class="admin-btn admin-btn-yellow" hx-post="/admin/usuarios/{{ u.id }}/suspender" hx-target="#usuario-{{ u.id }}" hx-swap="outerHTML">{% if u.activo %}⏸ Suspender{% else %}▶ Activar{% endif %}</button>
+      {% endif %}
+      {% if admin.nivel == 'super_admin' %}
+        <button class="admin-btn admin-btn-red" hx-post="/admin/usuarios/{{ u.id }}/eliminar" hx-confirm="¿Eliminar este usuario y TODO lo suyo (empleos, aplicaciones, chats)? No se puede deshacer." hx-target="#usuario-{{ u.id }}" hx-swap="outerHTML">🗑 Eliminar</button>
+      {% endif %}
+    </div>
+  </td>
+</tr>

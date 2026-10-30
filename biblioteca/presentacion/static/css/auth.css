@@ -43,15 +43,13 @@ body {
 }
 
 .logo-box {
-  background: var(--primary);
-  color: #fff;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 14px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
+    width: 150px;      /* Controla el ancho del logo */
+    height: auto;      /* Mantiene la proporción original */
+    display: block;    /* Ayuda a centrarlo o alinearlo mejor */
+    margin: 10px;      /* Le da un espacio alrededor */
+    border-radius: 6px; /* Redondea las esquinas del logo */
 }
+
 
 .logo-text {
   font-family: var(--font-display);
@@ -114,27 +112,6 @@ body {
   margin-bottom: 16px;
 }
 
-/* ─── REDES SOCIALES ─────────────────────────────────────────────────────── */
-.social-networks {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 16px;
-  margin-top: 16px;
-}
-
-.social-networks ion-icon {
-  border: 1px solid var(--border-input);
-  font-size: 20px;
-  border-radius: 20px;
-  padding: 8px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.social-networks ion-icon:hover {
-  background-color: var(--primary);
-  color: #fff;
-}
 
 /* ─── SUBTÍTULO ──────────────────────────────────────────────────────────── */
 .container-form span {
@@ -339,20 +316,7 @@ body {
 
 .toggle-text span:hover { background: #d4e8ff; }
 
-/* ─── DEMO HINT ──────────────────────────────────────────────────────────── */
-.demo-hint {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 10px;
-  opacity: 0.7;
-}
 
-.demo-hint code {
-  background: var(--bg-input);
-  padding: 1px 5px;
-  border-radius: 4px;
-  font-size: 11px;
-}
 
 /* ─── ANIMACIÓN SLIDE ────────────────────────────────────────────────────── */
 .sign-up { transform: translateX(-100%); }

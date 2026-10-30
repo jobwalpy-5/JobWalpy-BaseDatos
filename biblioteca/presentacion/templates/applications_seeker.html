@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Mis aplicaciones — JobWalpy{% endblock %}
+{% block content %}
+<div class="container" style="padding-top:40px;padding-bottom:80px;">
+  <div style="margin-bottom:32px;">
+    <h1 class="section-title">Mis aplicaciones <span class="count-badge">{{ total }}</span></h1>
+    <p style="color:var(--text-soft);margin-top:8px;">Consulta el estado de tus postulaciones.</p>
+  </div>
+  {% if applications %}
+    <div style="display:flex;flex-direction:column;gap:16px;">
+    {% for app in applications %}
+      <article class="profile-section">
+        <h3>{{ app.job.title }}</h3>
+        <p>{{ app.job.company }} · {{ app.job.location }}</p>
+        <p>Fecha: {{ app.applied_at }}</p>
+        <p>Estado: <strong>{{ app.status|capitalize }}</strong></p>
+        <a href="/jobs/{{ app.job.id }}" class="btn btn-outline btn-sm">Ver oferta</a>
+      </article>
+    {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <span class="empty-icon">📭</span><h3>Aún no te has postulado</h3>
+      <p>Explora las ofertas disponibles y envía tu primera postulación.</p>
+      <a href="/jobs" class="btn btn-primary mt-sm">Ver empleos</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

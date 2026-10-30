@@ -8,6 +8,7 @@ from dominio import servicios as db
 from presentacion.plantillas import templates, DIR_STATIC
 from dominio.esquemas import BuscadorCreate, EmpleadorCreate, BLOCKED_DOMAINS, validar_password_fuerte
 from presentacion.rutas.context_helper import chat_context
+from nucleo.sesion_usuario import iniciar_sesion
 
 router = APIRouter()
 
@@ -24,25 +25,25 @@ async def login_page(request: Request, next: str = "/"):
         return RedirectResponse("/")
     return templates.TemplateResponse(request=request, name="login.html", context={"next": next})
 
+   
+
+   
 
 @router.post("/login")
 async def login(request: Request, email: str = Form(...), password: str = Form(...), next: str = Form(default="/")):
+
+
+
+    
     # db.verify_login hashea internamente y compara de forma segura; nunca compara texto plano.
     user = db.verify_login(email, password)
     if not user:
         return templates.TemplateResponse(request=request, name="login.html",
             context={"error": "Correo o contraseña incorrectos", "next": next})
 
-    destino = next if next and next.startswith("/") else "/"
+    destino = next if (next.startswith("/") and not next.startswith("//") and "\\" not in next) else "/"
     response = RedirectResponse(destino, status_code=302)
-    response.set_cookie(
-        key="user_id",
-        value=str(user["id"]),
-        max_age=2592000,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    iniciar_sesion(response, user["id"])
     return response
 
 
@@ -86,14 +87,7 @@ async def register(
     db.generar_token_verificacion(user["id"])
 
     response = RedirectResponse("/profile", status_code=302)
-    response.set_cookie(
-        key="user_id",
-        value=str(user["id"]),
-        max_age=2592000,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    iniciar_sesion(response, user["id"])
     return response
 
 
@@ -173,14 +167,7 @@ async def register_employer(
     db.generar_token_verificacion(user["id"])
 
     response = RedirectResponse("/profile", status_code=302)
-    response.set_cookie(
-        key="user_id",
-        value=str(user["id"]),
-        max_age=2592000,
-        httponly=True,
-        samesite="lax",
-        path="/"
-    )
+    iniciar_sesion(response, user["id"])
     return response
 
 
@@ -223,10 +210,9 @@ async def profile_page(request: Request):
             apps_with_jobs.append({**app, "job": job})
 
     posted_jobs = [j for j in db.get_jobs() if str(j.get("posted_by")) == str(user_id)]
-    portfolio_items = []
     return templates.TemplateResponse(request=request, name="profile.html", context={
         **ctx, "applications": apps_with_jobs, "posted_jobs": posted_jobs,
-        "portfolio_items": portfolio_items
+       
     })
 
 

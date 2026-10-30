@@ -24,25 +24,19 @@ def _require_buscador(request: Request):
     return user
 
 
-# ── FOTO DE PERFIL ────────────────────────────────────────────────────────────
+# ── FOTO DE PERFIL (por enlace) ──────────────────────────────
 @router.post("/profile/photo")
-async def upload_profile_photo(request: Request, photo: UploadFile = File(...)):
+async def set_profile_photo(request: Request, photo_url: str = Form(...)):
     user = _require_buscador(request)
     if not user:
         return RedirectResponse("/login", status_code=302)
 
-    content = await photo.read()
-    try:
-        url = storage.upload_profile_photo(user["id"], photo.filename, content)
-    except storage.ArchivoInvalidoError as e:
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
-    except RuntimeError as e:
-        # MinIO no está configurado — error claro en vez de un 500 genérico.
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
+    photo_url = photo_url.strip()
+    if not photo_url.lower().startswith(("http://", "https://")) or len(photo_url) > 500:
+        return RedirectResponse("/profile?error=enlace_invalido", status_code=302)
 
-    db.update_user(user["id"], {"profile_photo_url": url})
+    db.update_user(user["id"], {"profile_photo_url": photo_url})
     return RedirectResponse("/profile?success=foto_actualizada", status_code=302)
-
 
 # ── VIDEO DE PRESENTACIÓN ──────────────────────────────────────────────────────
 @router.post("/profile/video")
@@ -61,33 +55,4 @@ async def upload_video_presentation(request: Request, video: UploadFile = File(.
     return RedirectResponse("/profile?success=video_actualizado", status_code=302)
 
 
-# ── PORTAFOLIO ─────────────────────────────────────────────────────────────────
-@router.post("/profile/portfolio")
-async def upload_portfolio_item(
-    request: Request,
-    title: str = Form(...),
-    description: str = Form(default=""),
-    file: UploadFile = File(...),
-):
-    user = _require_buscador(request)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-
-    content = await file.read()
-    try:
-        url = storage.upload_portfolio_file(user["id"], file.filename, content)
-    except (storage.ArchivoInvalidoError, RuntimeError) as e:
-        return RedirectResponse(f"/profile?error={e}", status_code=302)
-
-    db.create_portfolio_item(user["id"], title, description, url)
-    return RedirectResponse("/profile?success=portafolio_actualizado", status_code=302)
-
-
-@router.post("/profile/portfolio/{item_id}/delete")
-async def delete_portfolio_item(request: Request, item_id: str):
-    user = _require_buscador(request)
-    if not user:
-        return RedirectResponse("/login", status_code=302)
-
-    db.delete_portfolio_item(item_id, user["id"])
-    return RedirectResponse("/profile?success=item_eliminado", status_code=302)
+# aqui se eliminó la parte del portafolio

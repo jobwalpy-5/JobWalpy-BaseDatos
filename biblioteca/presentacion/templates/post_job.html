@@ -21,7 +21,8 @@
           </div>
           <div class="form-group">
             <label>Empresa *</label>
-            <input type="text" name="company" value="{{ user.name }}" required placeholder="Nombre de la empresa" />
+            <input type="text" value="{{ user.name }}" readonly />
+
           </div>
         </div>
 
@@ -58,6 +59,17 @@
               <option value="Freelance">Freelance</option>
               <option value="Prácticas">Prácticas</option>
             </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="salary-min">Salario mínimo mensual (COP)</label>
+            <input id="salary-min" type="number" name="salary_min" min="0" step="1000" value="0" />
+          </div>
+          <div class="form-group">
+            <label for="salary-max">Salario máximo mensual (COP)</label>
+            <input id="salary-max" type="number" name="salary_max" min="0" step="1000" value="0" />
           </div>
         </div>
 

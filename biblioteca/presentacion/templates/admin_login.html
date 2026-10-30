@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acceso administrativo — JobWalpy</title>
+<script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/theme.css">
+</head>
+<body>
+  <main class="container" style="max-width:480px;padding-top:72px;padding-bottom:72px;">
+    <section class="profile-section">
+      <div class="admin-brand" style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
+        <img class="brand-logo-image" src="/static/img/logo.png" alt="" width="38" height="38">
+        <span class="logo-text">JobWalpy</span>
+      </div>
+      <h1>Acceso administrativo</h1>
+      <p>Esta entrada es exclusiva para personal autorizado de JobWalpy.</p>
+      {% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+      <form method="post" action="/admin/login">
+        <div class="form-group">
+          <label for="admin-email">Correo administrativo</label>
+          <input id="admin-email" type="email" name="email" required maxlength="254" autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label for="admin-password">Contraseña</label>
+          <input id="admin-password" type="password" name="password" required maxlength="128" autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary">Entrar al panel</button>
+      </form>
+      <p style="margin-top:20px"><a href="/login">Volver al inicio de sesión</a></p>
+    </section>
+  </main>
+  <script src="/static/js/theme.js"></script>
+</body>
+</html>

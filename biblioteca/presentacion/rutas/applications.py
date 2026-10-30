@@ -10,6 +10,7 @@ router = APIRouter()
 # NOTA: esta ruta no existía en la versión anterior — sin ella, applications.html
 # era inalcanzable (nada apuntaba a /applications). La agrego para que el botón
 # "Ver candidatos" / flujo del empleador funcione de verdad.
+
 @router.get("/applications", response_class=HTMLResponse)
 async def applications_page(request: Request):
     user_id = request.cookies.get("user_id")
@@ -17,6 +18,11 @@ async def applications_page(request: Request):
         return RedirectResponse("/login?next=/applications", status_code=302)
 
     user = db.get_active_user(user_id)
+    if user and user.get("role") == "buscador":
+        propias = [{**a, "job": j} for a in db.get_applications_by_user(user_id)
+                   if (j := db.get_job(a["job_id"]))]
+        return templates.TemplateResponse(request=request, name="applications_seeker.html", context={
+            "user": user, "applications": propias, "total": len(propias)})
     if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
 
@@ -52,6 +58,9 @@ async def update_status(
     user = db.get_active_user(user_id)
     if not user or user.get("role") != "empleador":
         return RedirectResponse("/", status_code=302)
+
+    if status not in ("pendiente", "aceptado", "rechazado"):
+        return RedirectResponse("/applications", status_code=302)
 
     application = db.get_application(application_id)
     if not application:

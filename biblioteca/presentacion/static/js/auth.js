@@ -19,8 +19,12 @@ document.querySelectorAll('.alert').forEach(alert => {
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(a => {
   a.addEventListener('click', e => {
+    const target = a.getAttribute('href');
+    if (!target || target === '#') return;
+    const node = document.querySelector(target);
+    if (!node) return;
     e.preventDefault();
-    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+    node.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   });
 });
 

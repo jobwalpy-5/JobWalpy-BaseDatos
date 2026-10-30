@@ -1,0 +1,12 @@
+<div class="admin-count">{{ usuarios|length }} usuario(s) encontrado(s)</div>
+<div class="admin-table-card">
+  <table class="admin-table">
+    <thead><tr><th>Correo</th><th>Rol</th><th>Correo verificado</th><th>Estado</th><th>Registro</th><th>Acciones</th></tr></thead>
+    <tbody>
+      {% for u in usuarios %}{% include "_admin_usuario_fila.html" %}
+      {% else %}
+      <tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted);">No hay usuarios con estos filtros.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>

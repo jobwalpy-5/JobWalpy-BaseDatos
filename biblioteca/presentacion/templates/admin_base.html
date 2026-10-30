@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block titulo %}Panel{% endblock %} — Admin JobWalpy</title>
+  <meta name="htmx-config" content='{"allowEval": false, "selfRequestsOnly": true}'>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
+  <link rel="stylesheet" href="/static/css/style.css"/>
+  <link rel="stylesheet" href="/static/css/admin.css"/>
+  <link rel="stylesheet" href="/static/css/theme.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.4/dist/htmx.min.js"></script>
+</head>
+<body style="display:flex;min-height:100vh;background:var(--bg-page);">
+{% include "admin_sidebar.html" %}
+<main style="flex:1;overflow-y:auto;">
+  {% block contenido %}{% endblock %}
+</main>
+
+<div id="admin-toasts" class="admin-toasts" aria-live="polite"></div>
+<script>
+  // Mensajes emergentes: el servidor los pide con el encabezado HX-Trigger.
+  function adminToast(mensaje, tipo) {
+    const el = document.createElement('div');
+    el.className = 'admin-toast' + (tipo === 'error' ? ' admin-toast-error' : '');
+    el.textContent = mensaje;
+    document.getElementById('admin-toasts').appendChild(el);
+    setTimeout(() => el.remove(), 3500);
+  }
+  document.body.addEventListener('toast', e => adminToast(e.detail.mensaje, e.detail.tipo));
+  document.body.addEventListener('htmx:responseError', () => adminToast('No se pudo completar la acción.', 'error'));
+  document.body.addEventListener('htmx:sendError', () => adminToast('Sin conexión con el servidor.', 'error'));
+</script>
+<script src="/static/js/theme.js"></script>
+</body>
+</html>

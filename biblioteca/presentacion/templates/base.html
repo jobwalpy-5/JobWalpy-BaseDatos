@@ -7,7 +7,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>try{document.documentElement.dataset.theme=localStorage.getItem('jobwalpy-theme')||'light';}catch(e){document.documentElement.dataset.theme='light';}</script>
   <link rel="stylesheet" href="/static/css/style.css" />
+  <link rel="stylesheet" href="/static/css/theme.css" />
   {% block extra_css %}{% endblock %}
 </head>
 <body>
@@ -17,8 +19,8 @@
        ══════════════════════════════════════════════════════════════ -->
   <nav class="navbar">
     <div class="nav-inner">
-      <a href="/" class="nav-logo">
-        <span class="logo-box">JW</span>
+      <a href="/" class="nav-logo" aria-label="JobWalpy — Inicio">
+        <img class="brand-logo-image" src="/static/img/logo.png" alt="" width="38" height="38" />
         <span class="logo-text">JobWalpy</span>
       </a>
 
@@ -28,7 +30,7 @@
         <!-- ── NAVBAR EMPLEADOR ── -->
         <a href="/" class="nav-link">Inicio</a>
         <a href="/post-job" class="nav-link">➕ Publicar empleo</a>
-        <a href="/jobs" class="nav-link">👥 Candidatos</a>
+        <a href="/jobs?view=candidatos" class="nav-link">👥 Candidatos</a>
         <a href="/applications" class="nav-link">📋 Aplicaciones</a>
         <a href="/chat" class="nav-link">💬 Mensajes</a>
         <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
@@ -38,7 +40,7 @@
             {{ user.avatar }}
           </div>
           <span style="font-size:13px;font-weight:600;color:var(--text);">{{ user.company_name or user.name }}</span>
-          {% if not user.verified %}
+          {% if not user.verified_company %}
           <span style="width:7px;height:7px;border-radius:50%;background:var(--warning);flex-shrink:0;" title="Cuenta pendiente de verificación"></span>
           {% endif %}
         </a>
@@ -72,11 +74,27 @@
   </nav>
 
   <!-- ALERTS -->
-  {% if request.query_params.get('error') %}
-    <div class="alert alert-error">{{ request.query_params.get('error') }}</div>
+  {% set alert_errors = {
+    'ya_aplicaste': 'Ya te postulaste a esta oferta.',
+    'enlace_invalido': 'El enlace no es válido o ha expirado.',
+    'token_invalido': 'El enlace de verificación no es válido o ha expirado.',
+    'empresa_pendiente': 'Tu empresa debe ser aprobada antes de publicar empleos o consultar candidatos.',
+    'acceso_denegado': 'No tienes permiso para realizar esa acción.',
+    'salario_invalido': 'Revisa el rango salarial: los valores deben ser positivos y el máximo no puede ser menor que el mínimo.'
+  } %}
+  {% set alert_success = {
+    'aplicacion_enviada': 'Tu postulación fue enviada correctamente.',
+    'correo_verificado': 'Tu correo fue verificado.',
+    'foto_actualizada': 'Tu foto de perfil fue actualizada.',
+    'oferta_cerrada': 'La oferta fue cerrada; se conservó el historial de postulaciones.'
+  } %}
+  {% set error_code = request.query_params.get('error', '') %}
+  {% set success_code = request.query_params.get('success', '') %}
+  {% if error_code in alert_errors %}
+    <div class="alert alert-error">{{ alert_errors[error_code] }}</div>
   {% endif %}
-  {% if request.query_params.get('success') %}
-    <div class="alert alert-success">{{ request.query_params.get('success') }}</div>
+  {% if success_code in alert_success %}
+    <div class="alert alert-success">{{ alert_success[success_code] }}</div>
   {% endif %}
 
   {% block content %}{% endblock %}
@@ -85,7 +103,7 @@
   <footer class="footer">
     <div class="footer-inner">
       <div class="footer-brand">
-        <span class="logo-box small">JW</span>
+        <img class="brand-logo-image brand-logo-image--small" src="/static/img/logo.png" alt="" width="30" height="30" />
         <span>JobWalpy — Conectando talento con oportunidades</span>
       </div>
       <p class="footer-copy">© 2026 JobWalpy. Todos los derechos reservados.</p>
@@ -154,6 +172,7 @@
   {% endif %}
 
   <script src="/static/js/main.js"></script>
+  <script src="/static/js/theme.js"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

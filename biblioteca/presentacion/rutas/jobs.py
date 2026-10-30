@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request, Form
+sfrom fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from datetime import date
 from dominio import servicios as db
@@ -7,44 +7,71 @@ from presentacion.rutas.context_helper import chat_context
  
 router = APIRouter()
  
-# ── VER TODOS LOS EMPLEOS ─────────────────────────────────────────────────────
+# ── VER TODOS LOS EMPLEOS (y, para empleadores, la lista de candidatos) ──────
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(
-    request: Request, 
-    search: str = "", 
-    category: str = "",
-    type: str = "" 
-): # 👈 CORREGIDO: Eliminado user_id de los parámetros
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN: Lectura segura desde el request
-    
-    jobs = db.get_jobs()
-    if search:
-        jobs = [j for j in jobs if search.lower() in j["title"].lower() or search.lower() in j["company"].lower()]
+    request: Request,
+    search: str = "", category: str = "", type: str = "",
+    view: str = "", location: str = "", skills: str = "", experience: str = ""
+):
+    user_id = request.cookies.get("user_id")
+    ctx = chat_context(user_id)
+    user = ctx["user"]
+    q = search.strip().lower()
+
+    # Vista de candidatos: solo para empleadores (el enlace "👥 Candidatos" de la barra).
+    if view == "candidatos":
+        if not user or user.get("role") != "empleador":
+            return RedirectResponse("/login?next=/jobs?view=candidatos", status_code=302)
+        wanted = [x.strip().lower() for x in skills.split(",") if x.strip()]
+        seekers = []
+        for u in db.get_users():
+            if u.get("role") != "buscador":
+                continue
+            if q and q not in f"{u.get('name','')} {u.get('bio','')} {' '.join(u.get('skills') or [])}".lower():
+                continue
+            if location and location.lower() not in (u.get("location") or "").lower():
+                continue
+            have = [x.lower() for x in (u.get("skills") or [])]
+            if wanted and not all(any(w in h for h in have) for w in wanted):
+                continue
+            if experience and not (u.get("experience") or "").strip():
+                continue
+            seekers.append(u)
+        return templates.TemplateResponse(request=request, name="jobs.html", context={
+            **ctx, "view": "candidatos", "seekers": seekers, "jobs": [], "categories": [],
+            "search": search, "selected_category": "", "selected_type": "",
+            "filter_location": location, "filter_skills": skills, "filter_experience": experience,
+            "total": len(seekers),
+        })
+
+    # Lista pública: solo empleos activos (un empleo desactivado por el admin no debe verse).
+    all_jobs = [j for j in db.get_jobs() if j.get("active", True)]
+    jobs = all_jobs
+    if q:
+        jobs = [j for j in jobs if q in j["title"].lower() or q in j["company"].lower()]
     if category:
         jobs = [j for j in jobs if j["category"] == category]
     if type:
         jobs = [j for j in jobs if j["type"] == type]
-        
-    categories = list(set(j["category"] for j in db.get_jobs()))
-    ctx = chat_context(user_id)
-    
+    categories = sorted({j["category"] for j in all_jobs})
+
     return templates.TemplateResponse(request=request, name="jobs.html", context={
-        **ctx,
-        "jobs": jobs, "categories": categories,
-        "search": search, "selected_category": category,
-        "selected_type": type,
-        "total": len(jobs)
+        **ctx, "view": "", "seekers": [], "jobs": jobs, "categories": categories,
+        "search": search, "selected_category": category, "selected_type": type,
+        "filter_location": "", "filter_skills": "", "filter_experience": "",
+        "total": len(jobs),
     })
- 
+
 # ── DETALLE DE UN EMPLEO ──────────────────────────────────────────────────────
 @router.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail(request: Request, job_id: str): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
     
     job = db.get_job(job_id)
-    if not job:
+    if not job or (not job.get("active", True) and str(job.get("posted_by")) != str(user_id)):
         return RedirectResponse("/jobs")
-        
+
     ctx = chat_context(user_id)
     applications = db.get_applications_by_job(job_id)
     already_applied = any(a["user_id"] == user_id for a in applications) if user_id else False
@@ -69,10 +96,10 @@ async def post_job_page(request: Request): # 👈 CORREGIDO
 @router.post("/post-job")
 async def post_job(
     request: Request,
-    title: str = Form(...), company: str = Form(...),
+    title: str = Form(...),
     location: str = Form(...), type: str = Form(...),
     category: str = Form(...), description: str = Form(...),
-    requirements: str = Form(...), benefits: str = Form(...),
+    requirements: str = Form(...), benefits: str = Form(default=""),
     salary_min: int = Form(default=0), salary_max: int = Form(default=0)
 ): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
@@ -81,14 +108,15 @@ async def post_job(
     if not ctx["user"] or ctx["user"].get("role") != "empleador":
         return RedirectResponse("/login", status_code=302)
         
+    if salary_min < 0 or salary_max < 0 or (salary_max and salary_max < salary_min):
+        return RedirectResponse("/post-job?error=salario_invalido", status_code=302)
+
     job = {
-        "title": title, "company": company, "location": location,
-        "type": type, "category": category, "description": description,
-        # La BD exige salario_min/salario_max (NOT NULL). Si el formulario no los
-        # manda, se guarda 0 en vez de romper con un error 500.
+        "title": title, "company": ctx["user"].get("company_name") or ctx["user"]["name"], "location": location,
         "salary_min": salary_min, "salary_max": salary_max,
-        "requirements": [r.strip() for r in requirements.split(",")],
-        "benefits": [b.strip() for b in benefits.split(",")],
+        "type": type, "category": category, "description": description,
+        "requirements": [r.strip() for r in requirements.split(",") if r.strip()],
+        "benefits": [b.strip() for b in benefits.split(",") if b.strip()],
         "posted_by": user_id, "posted_at": str(date.today()), "active": True
     }
     new_job = db.create_job(job)
@@ -103,14 +131,21 @@ async def apply_job(
     phone: str = Form(...),
     experience_years: str = Form(...),
     education_level: str = Form(...),
-    availability: str = Form(...),
-    salary_expectation: str = Form(...)
+    availability: str = Form(...)
 ): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
     
     if not user_id:
         return RedirectResponse("/login", status_code=302)
-        
+
+    # Solo un buscador con cuenta activa puede aplicar, y solo a un empleo que exista y esté activo.
+    user = db.get_active_user(user_id)
+    if not user or user.get("role") != "buscador":
+        return RedirectResponse(f"/jobs/{job_id}", status_code=302)
+    job = db.get_job(job_id)
+    if not job or not job.get("active", True):
+        return RedirectResponse("/jobs", status_code=302)
+
     existing = db.get_applications_by_job(job_id)
     if any(a["user_id"] == user_id for a in existing):
         return RedirectResponse(f"/jobs/{job_id}?error=ya_aplicaste", status_code=302)
@@ -123,7 +158,6 @@ async def apply_job(
         "experience_years": experience_years,
         "education_level": education_level,
         "availability": availability,
-        "salary_expectation": salary_expectation,
         "status": "pendiente",
         "applied_at": str(date.today())
     })

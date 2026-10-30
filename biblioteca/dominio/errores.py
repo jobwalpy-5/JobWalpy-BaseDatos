@@ -1,5 +1,5 @@
 """
-CAPA 2 · LÓGICA — errores del negocio.
+
 
 Los lanza el repositorio (cuando la base de datos rechaza un duplicado) o el
 servicio (cuando una regla no se cumple), y los atrapan las rutas para
