@@ -22,15 +22,14 @@
 
   <div class="container {% if show_register %}toggle{% endif %}" id="container">
 
-    <!-- ── INICIAR SESIÓN ── -->
+    <!-- INICIAR SESIÓN: se conserva sin cambios -->
     <div class="container-form">
       <form class="sign-in" action="/login" method="post">
         <input type="hidden" name="next" value="{{ next or '/' }}" />
         <h1>Iniciar Sesión</h1>
-        <div class="social-networks">
-          <ion-icon name="logo-google"></ion-icon>
-          <ion-icon name="logo-facebook"></ion-icon>
-        </div>
+
+      
+
         <span>Use su correo y contraseña</span>
 
         <div class="box-sign-in">
@@ -53,65 +52,170 @@
         <div class="button-wrap">
           <button id="unclock-sign-in" type="submit">Iniciar sesión</button>
         </div>
+
         <p class="toggle-text">¿No tienes cuenta? <span id="btn-sign-up-mobile">Regístrate</span></p>
-        <p class="demo-hint">Demo: <code>ana@email.com</code> / <code>1234</code></p>
+        
       </form>
     </div>
 
-    <!-- ── REGISTRARSE (buscador o redirige a empleador) ── -->
+    <!-- REGISTRO -->
     <div class="container-form">
       <div class="sign-up" id="register-panel">
         <h1>Registrarse</h1>
-        <div class="social-networks">
-          <ion-icon name="logo-google"></ion-icon>
-          <ion-icon name="logo-facebook"></ion-icon>
-        </div>
+
+       
         <span>Elige cómo quieres usar JobWalpy</span>
 
-        <!-- Selector de rol visual -->
         <div class="role-selector" id="role-selector">
           <button type="button" class="role-btn active" id="btn-buscador" onclick="selectRole('buscador')">
             🔍 Busco empleo
           </button>
+
           <button type="button" class="role-btn" id="btn-empleador" onclick="selectRole('empleador')">
             🏢 Soy empleador
           </button>
         </div>
 
-        <!-- Formulario buscador -->
+        <!-- FORMULARIO BUSCADOR -->
         <form id="form-buscador" class="role-form" action="/register" method="post">
           <input type="hidden" name="role" value="buscador" />
 
+          <!-- Compatibilidad con el campo name del backend actual -->
+          <input type="hidden" name="name" id="full-name" />
+
+          <!-- Nombres -->
           <div class="box-sign-up">
             <ion-icon name="person-outline"></ion-icon>
-            <input type="text" name="name" placeholder="Nombre completo" required />
+            <input
+              type="text"
+              id="first-name"
+              name="first_name"
+              maxlength="50"
+              placeholder="Nombres"
+              autocomplete="given-name"
+              required
+            />
           </div>
+
+          <!-- Apellidos -->
+          <div class="box-sign-up">
+            <ion-icon name="person-outline"></ion-icon>
+            <input
+              type="text"
+              id="last-name"
+              name="last_name"
+              maxlength="50"
+              placeholder="Apellidos"
+              autocomplete="family-name"
+              required
+            />
+          </div>
+
+          <!-- Tipo de documento -->
+          <div class="box-sign-up">
+            <ion-icon name="id-card-outline"></ion-icon>
+            <select
+              name="document_type"
+              id="document-type"
+              required
+              aria-label="Tipo de documento"
+            >
+              <option value="" selected disabled>Tipo de documento</option>
+              <option value="CC">Cédula de ciudadanía</option>
+              <option value="CE">Cédula de extranjería</option>
+              <option value="TI">Tarjeta de identidad</option>
+              <option value="PPT">Permiso por Protección Temporal (PPT)</option>
+              <option value="PASAPORTE">Pasaporte</option>
+            </select>
+          </div>
+
+          <!-- Número de documento -->
+          <div class="box-sign-up">
+            <ion-icon name="card-outline"></ion-icon>
+            <input
+              type="text"
+              name="document_number"
+              id="document-number"
+              maxlength="20"
+              placeholder="Número de documento"
+              autocomplete="off"
+              required
+              maxlength="30"
+            />
+          </div>
+
+          <!-- Correo: se conserva -->
           <div class="box-sign-up">
             <ion-icon name="mail-outline"></ion-icon>
-            <input type="email" name="email" placeholder="Email" required />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              autocomplete="email"
+              maxlength="254"
+              required
+            />
           </div>
+
+          <!-- Contraseña: se conserva -->
           <div class="box-sign-up">
             <ion-icon name="lock-closed-outline"></ion-icon>
-            <input type="password" name="password" placeholder="Contraseña (mín. 8 car., mayúscula, número, especial)" required />
+            <input
+              type="password"
+              name="password"
+              placeholder="Contraseña (mín. 8 car., mayúscula, número, especial)"
+              autocomplete="new-password"
+              maxlength="128"
+              required
+            />
           </div>
+
+          <!-- Departamento de Colombia -->
+          <div class="box-sign-up">
+            <ion-icon name="map-outline"></ion-icon>
+            <select
+              name="department"
+              id="department"
+              required
+              aria-label="Departamento"
+            >
+              <option value="" selected disabled>Selecciona tu departamento</option>
+            </select>
+          </div>
+
+          <!-- Ciudad o municipio -->
           <div class="box-sign-up">
             <ion-icon name="location-outline"></ion-icon>
-            <input type="text" name="location" placeholder="Ciudad (opcional)" />
+            <select
+              name="city"
+              id="city"
+              required
+              aria-label="Ciudad o municipio"
+              disabled
+            >
+              <option value="" selected disabled>Primero selecciona un departamento</option>
+            </select>
           </div>
+
+          <!-- Se conserva el campo location que recibe el backend actual -->
+          <input type="hidden" name="location" id="location" />
+
           <div class="button-wrap">
             <button type="submit">Crear cuenta</button>
           </div>
         </form>
 
-        <!-- Panel empleador: redirige al formulario completo -->
+        <!-- PANEL EMPLEADOR: se conserva -->
         <div id="panel-empleador" class="role-form" style="display:none; text-align:center; padding: 16px 0;">
           <p style="font-size:14px;color:#444e5e;margin-bottom:20px;line-height:1.6;">
             Para publicar empleos necesitamos verificar tu empresa.<br/>
             El registro toma 3 minutos y requiere datos legales básicos.
           </p>
+
           <a href="/register/employer" class="employer-cta-btn">
             Registrar mi empresa →
           </a>
+
           <p style="font-size:12px;color:#9ca3af;margin-top:14px;">
             Tu cuenta será revisada en 1-2 días hábiles.
           </p>
@@ -121,13 +225,14 @@
       </div>
     </div>
 
-    <!-- ── PANEL BIENVENIDA ── -->
+    <!-- PANEL BIENVENIDA: se conserva -->
     <div class="container-welcome">
       <div class="welcome-sign-up welcome">
         <h3>¡Bienvenido!</h3>
         <p>Ingrese sus datos personales para usar todas las funciones del sitio</p>
         <button class="button" id="btn-sign-up">Registrarse</button>
       </div>
+
       <div class="welcome-sign-in welcome">
         <h3>¡Hola!</h3>
         <p>Regístrese con sus datos personales para usar todas las funciones del sitio</p>
@@ -137,8 +242,12 @@
 
   </div>
 
+  <!-- Estilos complementarios: no se modifican los estilos originales -->
   <style>
-    .role-form { width: 100%; }
+    .role-form {
+      width: 100%;
+    }
+
     .employer-cta-btn {
       display: inline-block;
       padding: 12px 28px;
@@ -150,18 +259,180 @@
       text-decoration: none;
       transition: opacity .2s, transform .2s;
     }
-    .employer-cta-btn:hover { opacity: .88; transform: translateY(-1px); }
+
+    .employer-cta-btn:hover {
+      opacity: .88;
+      transform: translateY(-1px);
+    }
+
+    /* Los selectores utilizan las mismas cajas del formulario. */
+    .box-sign-up select {
+      width: 100%;
+      min-width: 0;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: #444e5e;
+      font: inherit;
+      padding: 0 8px;
+      appearance: auto;
+    }
+
+    .box-sign-up select:invalid {
+      color: #777;
+    }
+
+    .box-sign-up select option {
+      color: #222;
+      background: #fff;
+    }
+
+    .box-sign-up select:disabled {
+      opacity: .65;
+      cursor: not-allowed;
+    }
   </style>
 
   <script src="/static/js/auth.js"></script>
+
   <script>
     function selectRole(role) {
       document.getElementById('btn-buscador').classList.toggle('active', role === 'buscador');
       document.getElementById('btn-empleador').classList.toggle('active', role === 'empleador');
-      document.getElementById('form-buscador').style.display  = role === 'buscador' ? 'block' : 'none';
+      document.getElementById('form-buscador').style.display = role === 'buscador' ? 'block' : 'none';
       document.getElementById('panel-empleador').style.display = role === 'empleador' ? 'block' : 'none';
     }
+
+    /*
+      Carga departamentos y municipios desde la API pública de Colombia.
+      No requiere instalar librerías adicionales.
+    */
+    (function configurarUbicacionColombia() {
+      const departmentSelect = document.getElementById('department');
+      const citySelect = document.getElementById('city');
+      const locationInput = document.getElementById('location');
+      const form = document.getElementById('form-buscador');
+
+      const API = 'https://api-colombia.com/api/v1';
+
+      function setOption(select, text, value = '') {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = text;
+        option.disabled = true;
+        option.selected = true;
+        select.replaceChildren(option);
+      }
+
+      async function cargarDepartamentos() {
+        setOption(departmentSelect, 'Cargando departamentos...');
+
+        try {
+          const response = await fetch(`${API}/Department`);
+
+          if (!response.ok) {
+            throw new Error('No fue posible consultar los departamentos.');
+          }
+
+          const departments = await response.json();
+
+          departments.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+          const placeholder = document.createElement('option');
+          placeholder.value = '';
+          placeholder.textContent = 'Selecciona tu departamento';
+          placeholder.disabled = true;
+          placeholder.selected = true;
+          departmentSelect.replaceChildren(placeholder);
+
+          departments.forEach(department => {
+            const option = document.createElement('option');
+            option.value = department.id;
+            option.textContent = department.name;
+            option.dataset.name = department.name;
+            departmentSelect.appendChild(option);
+          });
+        } catch (error) {
+          console.error('Error cargando departamentos:', error);
+          setOption(departmentSelect, 'No se pudieron cargar los departamentos');
+        }
+      }
+
+      departmentSelect.addEventListener('change', async function () {
+        const departmentId = this.value;
+        const selectedDepartment = this.options[this.selectedIndex];
+
+        setOption(citySelect, 'Cargando ciudades y municipios...');
+        citySelect.disabled = true;
+        locationInput.value = '';
+
+        try {
+          const response = await fetch(`${API}/Department/${encodeURIComponent(departmentId)}/cities`);
+
+          if (!response.ok) {
+            throw new Error('No fue posible consultar los municipios.');
+          }
+
+          const cities = await response.json();
+
+          cities.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
+          const placeholder = document.createElement('option');
+          placeholder.value = '';
+          placeholder.textContent = 'Selecciona tu ciudad o municipio';
+          placeholder.disabled = true;
+          placeholder.selected = true;
+          citySelect.replaceChildren(placeholder);
+
+          cities.forEach(city => {
+            const option = document.createElement('option');
+            option.value = city.name;
+            option.textContent = city.name;
+            citySelect.appendChild(option);
+          });
+
+          citySelect.disabled = false;
+        } catch (error) {
+          console.error('Error cargando municipios:', error);
+          setOption(citySelect, 'No se pudieron cargar los municipios');
+          citySelect.disabled = true;
+        }
+      });
+
+      citySelect.addEventListener('change', function () {
+        const departmentName =
+          departmentSelect.options[departmentSelect.selectedIndex]?.dataset.name || '';
+
+        locationInput.value = `${this.value}, ${departmentName}`;
+      });
+
+      form.addEventListener('submit', function (event) {
+        const firstName = document.getElementById('first-name').value.trim();
+        const lastName = document.getElementById('last-name').value.trim();
+        const departmentName =
+          departmentSelect.options[departmentSelect.selectedIndex]?.dataset.name || '';
+        const cityName = citySelect.value;
+
+        if (!firstName || !lastName || !departmentName || !cityName) {
+          event.preventDefault();
+          alert('Completa tus nombres, apellidos y selecciona tu departamento y municipio.');
+          return;
+        }
+
+        /*
+          Conserva el campo "name" que utiliza el backend actual.
+          Los nombres y apellidos también se envían por separado.
+        */
+        document.getElementById('full-name').value =
+          `${firstName} ${lastName}`.trim();
+
+        locationInput.value = `${cityName}, ${departmentName}`;
+      });
+
+      cargarDepartamentos();
+    })();
   </script>
+
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>

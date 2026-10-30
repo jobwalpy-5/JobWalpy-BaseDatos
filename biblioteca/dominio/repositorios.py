@@ -267,9 +267,16 @@ def _job_row_to_dict(row: dict) -> dict:
 
 def listar_empleos() -> list:
     with get_conn() as conn:
-        rows = conn.execute("SELECT * FROM empleos ORDER BY publicado_at DESC, id DESC").fetchall()
-    return [_job_row_to_dict(r) for r in rows]
+        rows = conn.execute(
+            "SELECT * FROM empleos ORDER BY publicado_at DESC, id DESC"
+        ).fetchall()
 
+        if rows:
+            print("TIPO DE REGISTRO:", type(rows[0]))
+            print("COLUMNAS DISPONIBLES:", rows[0].keys() if hasattr(rows[0], "keys") else "El registro no tiene keys()")
+            print("PRIMER REGISTRO:", rows[0])
+
+    return [_job_row_to_dict(r) for r in rows]
 
 def obtener_empleo(job_id: str) -> dict | None:
     with get_conn() as conn:
@@ -475,3 +482,45 @@ def es_participante(conv_id: str, user_id: str) -> bool:
             (conv_id, str(user_id), str(user_id)),
         ).fetchone()
     return row is not None
+
+# ── RECUPERACIÓN DE CONTRASEÑA: OPERACIONES DE BASE DE DATOS ─────
+
+def guardar_token_restablecer(
+    token_hash: str,
+    user_id: str,
+    creado_at: str,
+    expira_at: str
+) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            """
+            INSERT INTO tokens_restablecer
+                (token_hash, usuario_id, creado_at, expira_at)
+            VALUES (%s, %s, %s, %s)
+            """,
+            (token_hash, str(user_id), creado_at, expira_at),
+        )
+
+
+def obtener_token_restablecer(token_hash: str) -> dict | None:
+    with get_conn() as conn:
+        return conn.execute(
+            """
+            SELECT usuario_id, expira_at
+            FROM tokens_restablecer
+            WHERE token_hash = %s
+            """,
+            (token_hash,),
+        ).fetchone()
+
+
+def aplicar_restablecer_password(user_id: str, password_hash: str) -> None:
+    with get_conn() as conn:
+        conn.execute(
+            "UPDATE usuarios SET password_hash = %s WHERE id = %s",
+            (password_hash, str(user_id)),
+        )
+        conn.execute(
+            "DELETE FROM tokens_restablecer WHERE usuario_id = %s",
+            (str(user_id),),
+        )
