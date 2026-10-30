@@ -22,6 +22,7 @@
 body {
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh; /* Añadí dvh: en celular descuenta la barra del navegador. */
   display: flex;
   justify-content: center;
   align-items: center;
@@ -76,7 +77,8 @@ body {
 
 /* En pantallas muy pequeñas se deja solo el ícono */
 @media (max-width: 360px) {
-  .nav-logo .logo-text { display: none; }
+  .nav-logo .logo-text,
+  .floating-logo .logo-text { display: none; }
 }
 
 /* ─── ALERTA DE SERVIDOR ─────────────────────────────────────────────────── */
@@ -131,6 +133,7 @@ body {
   font-weight: 800;
   color: var(--primary);
   margin-bottom: 16px;
+  text-align: center; /* Centré el título por si se parte en dos líneas. */
 }
 
 
@@ -146,7 +149,7 @@ body {
 .box-sign-up {
   width: 100%;
   max-width: 300px;
-  height: 42px;
+  min-height: 42px;  /* Cambié height por min-height: la caja crece si el texto se parte en dos líneas. */
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -167,10 +170,53 @@ body {
   border: none;
   outline: none;
   width: 100%;
+  min-width: 0;            /* Sin esto, el input no se encoge dentro del flex y se sale de la caja. */
   height: 100%;
+  min-height: 42px;
   background-color: inherit;
   font-family: var(--font);
   font-size: 14px;
+  color: var(--text);
+  text-overflow: ellipsis; /* Si el placeholder es largo, lo corto con "..." en vez de dejarlo a medias. */
+}
+
+/* Selects y etiquetas dentro de las cajas: los dejo con el mismo estilo que los inputs. */
+.box-sign-in select,
+.box-sign-up select {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  min-height: 42px;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.box-sign-in label,
+.box-sign-up label {
+  flex-shrink: 0;
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+/* Botón del ojito (ver/ocultar contraseña): le quito el aspecto de botón por defecto. */
+.box-sign-in button,
+.box-sign-up button {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
   color: var(--text);
 }
 
@@ -253,6 +299,7 @@ body {
 
 .role-btn {
   flex: 1;
+  min-width: 0;     /* Dejo que los dos botones se encojan por igual en pantallas chicas. */
   padding: 8px 6px;
   border-radius: 10px;
   font-size: 12px;
@@ -410,39 +457,68 @@ body {
 
 .container-welcome .button:hover { background-color: #d4e8ff; }
 
-/* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
-@media (max-width: 600px) {
+/* ─── RESPONSIVE: TABLET ─────────────────────────────────────────────────── */
+/* Entre 769px y 900px sigo con dos columnas, pero achico textos y espacios para que quepan. */
+@media (max-width: 900px) and (min-width: 769px) {
+  .container-form form,
+  .container-form .sign-up { padding: 32px 16px; }
+
+  .container-welcome .welcome { padding: 0 28px; }
+  .container-welcome h3 { font-size: 32px; }
+  .container-welcome p  { font-size: 14px; }
+}
+
+/* ─── RESPONSIVE: MÓVIL ──────────────────────────────────────────────────── */
+/* Subí el punto de quiebre de 600px a 768px para que las tablets pequeñas
+   también usen el diseño de una sola columna. */
+@media (max-width: 768px) {
   body {
     padding: 10px;
+    padding-top: 80px;      /* Dejo espacio arriba para el logo. */
     align-items: flex-start;
-    padding-top: 70px;
+  }
+
+  /* Cambié fixed por absolute: así el logo se va con el scroll y ya no tapa el formulario. */
+  .floating-logo {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+  }
+
+  .server-alert {
+    white-space: normal;    /* Dejo que el mensaje se parta en varias líneas. */
+    width: calc(100% - 24px);
+    max-width: 420px;
+    text-align: center;
+    padding: 10px 14px;
   }
 
   .container {
     flex-direction: column;
     min-height: auto;
-    overflow: visible;
+    max-width: 480px;
   }
 
   .container-form { width: 100%; }
   .container-welcome { display: none; }
   .toggle-text { display: block; }
 
-  .sign-up {
-    transform: translateX(-110%);
-    position: absolute;
-    width: 100%;
-    left: 0;
-    top: 0;
-    background: var(--bg-form);
-    border-radius: 10px;
-    z-index: 5;
+  /* Antes el formulario de registro estaba en position: absolute y se salía de la
+     tarjeta. Ahora muestro un solo formulario a la vez y la tarjeta crece a su medida. */
+  .container .sign-in,
+  .container .sign-up,
+  .container.toggle .sign-in,
+  .container.toggle .sign-up {
+    position: static;
+    transform: none;
+    transition: none;
+    height: auto;
+    animation: aparecer 0.3s ease;
   }
 
-  .sign-in { position: relative; }
-
-  .container.toggle .sign-in { transform: translateX(-110%); }
-  .container.toggle .sign-up { transform: translateX(0); }
+  .container .sign-up { display: none; }
+  .container.toggle .sign-in { display: none; }
+  .container.toggle .sign-up { display: flex; }
 
   .container-form form,
   .container-form .sign-up { padding: 28px 16px; }
@@ -452,10 +528,49 @@ body {
   .box-sign-in, .box-sign-up,
   .button-wrap, .role-selector,
   .role-form, #panel-empleador { max-width: 100%; }
+
+  .box-sign-in, .box-sign-up { min-height: 46px; }
+
+  /* 16px evita que iOS haga zoom automático al tocar un campo. */
+  .box-sign-in input, .box-sign-up input,
+  .box-sign-in select, .box-sign-up select {
+    font-size: 16px;
+    min-height: 46px;
+  }
+
+  .box-sign-in label, .box-sign-up label { font-size: 15px; }
+
+  .role-btn { font-size: 13px; padding: 10px 6px; }
+
+  /* Botón principal a lo ancho en móvil: más fácil de tocar. */
+  #unclock-sign-in,
+  #unclock-sign-up,
+  #form-buscador .button-wrap button,
+  .sign-up .button-wrap button { width: 100%; max-width: 260px; }
 }
 
+@keyframes aparecer {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── RESPONSIVE: MÓVIL PEQUEÑO ──────────────────────────────────────────── */
 @media (max-width: 400px) {
+  body { padding-top: 72px; }
+
+  .container-form form,
+  .container-form .sign-up { padding: 24px 12px; }
+
   .container-form h1 { font-size: 21px; }
   .social-networks { gap: 8px; margin: 12px 0; }
-  .box-sign-in, .box-sign-up { height: 38px; }
+  .box-sign-in, .box-sign-up { padding: 0 12px; }
+
+  /* Si "Tipo de documento" no cabe al lado del select, lo apilo en dos filas. */
+  .box-sign-up:has(label):has(select) {
+    flex-wrap: wrap;
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  .box-sign-up:has(label):has(select) select { flex-basis: 100%; }
 }
