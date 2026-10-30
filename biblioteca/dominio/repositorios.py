@@ -50,6 +50,8 @@ def _fila_a_usuario(conn, row: dict) -> dict:
             "bio": p["bio"], "skills": json.loads(p["skills"] or "[]"),
             "experience": p["experiencia"], "education": p["educacion"],
             "cv_url": p["cv_url"], "avatar": p["avatar"], "avatar_color": p["avatar_color"],
+            "profile_photo_url": p["profile_photo_url"] or "",
+            "presentation_video_url": p["presentation_video_url"] or "",
             "verified_company": False,
         })
     else:

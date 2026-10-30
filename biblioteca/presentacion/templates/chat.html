@@ -274,7 +274,7 @@ document.getElementById('conv-search')?.addEventListener('input', function() {
 });
 
 
-// Chat en tiempo real con WebSocket.
+// Chat con consulta periódica (polling) por HTTP.
 {% if active_conv and other_user %}
 const convId    = "{{ active_conv.id }}";
 const myId      = "{{ user.id }}";
@@ -410,7 +410,7 @@ input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
 
-conectar();
+// El servidor no tiene endpoint WebSocket (y Vercel no los soporta): se usa solo HTTP con consulta cada 3 s.
 
 // Mientras el WebSocket esté desconectado, consulta los mensajes nuevos por HTTP cada 3 segundos.
 setInterval(() => {

@@ -7,44 +7,71 @@ from presentacion.rutas.context_helper import chat_context
  
 router = APIRouter()
  
-# ── VER TODOS LOS EMPLEOS ─────────────────────────────────────────────────────
+# ── VER TODOS LOS EMPLEOS (y, para empleadores, la lista de candidatos) ──────
 @router.get("/jobs", response_class=HTMLResponse)
 async def jobs_page(
-    request: Request, 
-    search: str = "", 
-    category: str = "",
-    type: str = "" 
-): # 👈 CORREGIDO: Eliminado user_id de los parámetros
-    user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN: Lectura segura desde el request
-    
-    jobs = db.get_jobs()
-    if search:
-        jobs = [j for j in jobs if search.lower() in j["title"].lower() or search.lower() in j["company"].lower()]
+    request: Request,
+    search: str = "", category: str = "", type: str = "",
+    view: str = "", location: str = "", skills: str = "", experience: str = ""
+):
+    user_id = request.cookies.get("user_id")
+    ctx = chat_context(user_id)
+    user = ctx["user"]
+    q = search.strip().lower()
+
+    # Vista de candidatos: solo para empleadores (el enlace "👥 Candidatos" de la barra).
+    if view == "candidatos":
+        if not user or user.get("role") != "empleador":
+            return RedirectResponse("/login?next=/jobs?view=candidatos", status_code=302)
+        wanted = [x.strip().lower() for x in skills.split(",") if x.strip()]
+        seekers = []
+        for u in db.get_users():
+            if u.get("role") != "buscador":
+                continue
+            if q and q not in f"{u.get('name','')} {u.get('bio','')} {' '.join(u.get('skills') or [])}".lower():
+                continue
+            if location and location.lower() not in (u.get("location") or "").lower():
+                continue
+            have = [x.lower() for x in (u.get("skills") or [])]
+            if wanted and not all(any(w in h for h in have) for w in wanted):
+                continue
+            if experience and not (u.get("experience") or "").strip():
+                continue
+            seekers.append(u)
+        return templates.TemplateResponse(request=request, name="jobs.html", context={
+            **ctx, "view": "candidatos", "seekers": seekers, "jobs": [], "categories": [],
+            "search": search, "selected_category": "", "selected_type": "",
+            "filter_location": location, "filter_skills": skills, "filter_experience": experience,
+            "total": len(seekers),
+        })
+
+    # Lista pública: solo empleos activos (un empleo desactivado por el admin no debe verse).
+    all_jobs = [j for j in db.get_jobs() if j.get("active", True)]
+    jobs = all_jobs
+    if q:
+        jobs = [j for j in jobs if q in j["title"].lower() or q in j["company"].lower()]
     if category:
         jobs = [j for j in jobs if j["category"] == category]
     if type:
         jobs = [j for j in jobs if j["type"] == type]
-        
-    categories = list(set(j["category"] for j in db.get_jobs()))
-    ctx = chat_context(user_id)
-    
+    categories = sorted({j["category"] for j in all_jobs})
+
     return templates.TemplateResponse(request=request, name="jobs.html", context={
-        **ctx,
-        "jobs": jobs, "categories": categories,
-        "search": search, "selected_category": category,
-        "selected_type": type,
-        "total": len(jobs)
+        **ctx, "view": "", "seekers": [], "jobs": jobs, "categories": categories,
+        "search": search, "selected_category": category, "selected_type": type,
+        "filter_location": "", "filter_skills": "", "filter_experience": "",
+        "total": len(jobs),
     })
- 
+
 # ── DETALLE DE UN EMPLEO ──────────────────────────────────────────────────────
 @router.get("/jobs/{job_id}", response_class=HTMLResponse)
 async def job_detail(request: Request, job_id: str): # 👈 CORREGIDO
     user_id = request.cookies.get("user_id") # 👈 SOLUCIÓN
     
     job = db.get_job(job_id)
-    if not job:
+    if not job or (not job.get("active", True) and str(job.get("posted_by")) != str(user_id)):
         return RedirectResponse("/jobs")
-        
+
     ctx = chat_context(user_id)
     applications = db.get_applications_by_job(job_id)
     already_applied = any(a["user_id"] == user_id for a in applications) if user_id else False
